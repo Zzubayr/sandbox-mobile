@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useState } from "react"
+import { useState, memo } from "react"
 import { getOptimizedImageUrl } from "@/lib/cloudinary"
 import { cn } from "@/lib/utils"
 
@@ -20,7 +20,7 @@ interface CloudinaryImageProps {
   blurDataURL?: string
 }
 
-export function CloudinaryImage({
+export const CloudinaryImage = memo(function CloudinaryImage({
   src,
   alt,
   width,
@@ -163,4 +163,4 @@ export function CloudinaryImage({
       )}
     </div>
   )
-}
+})

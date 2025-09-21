@@ -13,6 +13,8 @@ import { Plus, Edit, Trash2, Package, Search, Filter, Eye, EyeOff } from "lucide
 import Link from "next/link"
 import { CloudinaryImage } from "@/components/ui/cloudinary-image"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { ProductGridSkeleton } from "@/components/ui/loading-skeletons"
+import { CategoryManager } from "@/components/dashboard/category-manager"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor, Product, Category } from "@/lib/types"
 
@@ -184,6 +186,14 @@ export default function ProductsPage() {
         </Button>
       </div>
 
+      {/* Category Manager */}
+      {vendor && (
+        <CategoryManager 
+          vendorId={vendor.id} 
+          onCategoriesChange={setCategories}
+        />
+      )}
+
       {/* Filters */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
@@ -244,7 +254,9 @@ export default function ProductsPage() {
       </Card>
 
       {/* Products Grid */}
-      {filteredProducts.length > 0 ? (
+      {loading ? (
+        <ProductGridSkeleton count={6} />
+      ) : filteredProducts.length > 0 ? (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredProducts.map((product) => (
             <Card key={product.id} className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow">

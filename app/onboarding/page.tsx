@@ -10,12 +10,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { useTheme } from "@/lib/theme-context"
+import { toastHelpers } from "@/lib/toast-helpers"
 import { Loader2, Store, Palette, Phone, ArrowRight, Check, Sparkles } from "lucide-react"
 
 const THEME_OPTIONS = [
   { 
     value: "blue", 
     label: "Ocean Blue", 
+    
     description: "Professional and trustworthy",
     color: "bg-blue-500",
     gradient: "from-blue-400 to-blue-600",
@@ -206,10 +208,12 @@ export default function OnboardingPage() {
 
       // Apply theme immediately
       setTheme(formData.theme_color)
+      toastHelpers.success("Store Created!", "Your store has been set up successfully")
       router.push("/dashboard")
     } catch (error) {
       console.error("[v0] Error in handleSubmit:", error)
-      alert(`Error creating your store: ${error.message || 'Unknown error'}. Please try again.`)
+      const errorMessage = error.message || 'Unknown error'
+      toastHelpers.error("Setup Failed", `Error creating your store: ${errorMessage}. Please try again.`)
     } finally {
       setLoading(false)
     }

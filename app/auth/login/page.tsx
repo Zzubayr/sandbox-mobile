@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toastHelpers } from "@/lib/toast-helpers"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -40,10 +41,13 @@ export default function LoginPage() {
       if (error) throw error
 
       console.log("[v0] Login successful, redirecting to dashboard")
+      toastHelpers.success("Login Successful", "Welcome back!")
       router.push("/dashboard")
     } catch (error: unknown) {
       console.log("[v0] Login error:", error)
-      setError(error instanceof Error ? error.message : "An error occurred")
+      const errorMessage = error instanceof Error ? error.message : "An error occurred"
+      setError(errorMessage)
+      toastHelpers.error("Login Failed", errorMessage)
     } finally {
       setIsLoading(false)
     }

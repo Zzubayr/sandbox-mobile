@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { useTheme } from "@/lib/theme-context"
 import { createClient } from "@/lib/supabase/client"
 import { toastHelpers } from "@/lib/toast-helpers"
+import { DashboardStatsSkeleton } from "@/components/ui/loading-skeletons"
 import { Plus, Eye, Copy, TrendingUp, Package, ShoppingCart, Store, Users, DollarSign, Activity, ExternalLink } from "lucide-react"
 import Link from "next/link"
 
@@ -137,8 +138,15 @@ export default function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-8">
+        <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-2xl p-6 border border-slate-200">
+          <div className="h-20 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <DashboardStatsSkeleton />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="h-64 bg-gray-200 rounded-2xl animate-pulse"></div>
+          <div className="h-64 bg-gray-200 rounded-2xl animate-pulse"></div>
+        </div>
       </div>
     )
   }

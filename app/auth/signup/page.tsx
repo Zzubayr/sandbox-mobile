@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toastHelpers } from "@/lib/toast-helpers"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -29,6 +30,7 @@ export default function SignupPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match")
+      toastHelpers.error("Validation Error", "Passwords do not match")
       setIsLoading(false)
       return
     }
@@ -56,6 +58,7 @@ export default function SignupPage() {
 
       // Check if user was created successfully
       if (data.user) {
+        toastHelpers.success("Account Created", "Please check your email to verify your account")
         router.push("/auth/signup-success")
       } else {
         throw new Error("User creation failed - no user data returned")
@@ -65,17 +68,20 @@ export default function SignupPage() {
 
       // Provide more specific error messages
       if (error instanceof Error) {
+        let errorMessage = error.message
         if (error.message.includes("duplicate key")) {
-          setError("An account with this email already exists")
+          errorMessage = "An account with this email already exists"
         } else if (error.message.includes("database")) {
-          setError("Database error - please try again or contact support")
+          errorMessage = "Database error - please try again or contact support"
         } else if (error.message.includes("trigger")) {
-          setError("Account setup error - please try again")
-        } else {
-          setError(error.message)
+          errorMessage = "Account setup error - please try again"
         }
+        setError(errorMessage)
+        toastHelpers.error("Signup Failed", errorMessage)
       } else {
-        setError("An unexpected error occurred")
+        const errorMessage = "An unexpected error occurred"
+        setError(errorMessage)
+        toastHelpers.error("Signup Failed", errorMessage)
       }
     } finally {
       setIsLoading(false)
