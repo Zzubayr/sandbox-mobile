@@ -36,13 +36,45 @@ export function generateWhatsAppUrl(options: WhatsAppMessageOptions): string {
  * Creates a customer request message for WhatsApp
  */
 export function createCustomerRequestMessage(options: WhatsAppMessageOptions): string {
-  const { customerName, requestId, storeName, totalAmount, itemCount } = options
+  const { customerName, requestId, storeName, totalAmount, itemCount, message } = options
 
   const shortRequestId = requestId?.slice(-8) || "N/A"
   const items = itemCount ? `${itemCount} items` : "items"
   const total = totalAmount ? `$${totalAmount}` : "TBD"
 
+  // If custom message is provided, use it
+  if (message) {
+    return message
+  }
+
+  // Default message with request details
   return `Hi ${storeName}! I just submitted a request (#${shortRequestId}) for ${items} totaling ${total}. Please let me know about availability and next steps. Thanks!`
+}
+
+/**
+ * Creates a detailed customer request message with full URL
+ */
+export function createDetailedCustomerRequestMessage(options: WhatsAppMessageOptions & { requestUrl?: string }): string {
+  const { customerName, requestId, storeName, totalAmount, itemCount, requestUrl, message } = options
+
+  const shortRequestId = requestId?.slice(-8) || "N/A"
+  const items = itemCount ? `${itemCount} items` : "items"
+  const total = totalAmount ? `$${totalAmount}` : "TBD"
+
+  // If custom message is provided, use it
+  if (message) {
+    return message
+  }
+
+  let baseMessage = `Hi ${storeName}! I just submitted a request (#${shortRequestId}) for ${items} totaling ${total}.`
+
+  if (requestUrl) {
+    baseMessage += `\n\nYou can view the complete request details here: ${requestUrl}`
+  }
+
+  baseMessage += `\n\nPlease let me know about availability and next steps. Thanks!`
+
+  return baseMessage
 }
 
 /**

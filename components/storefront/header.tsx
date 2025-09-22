@@ -34,6 +34,9 @@ export function StorefrontHeader({ vendor, cartItemCount = 0 }: StorefrontHeader
                         className="object-cover"
                         quality="auto"
                         crop="fill"
+                        priority={true}
+                        placeholder="blur"
+                        sizes="40px"
                       />
                     </div>
                   ) : (

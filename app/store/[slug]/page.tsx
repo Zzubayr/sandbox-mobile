@@ -46,7 +46,7 @@ export default async function StorePage({ params }: StorePageProps) {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <StorefrontHeader vendor={vendor} />
+        <StorefrontHeader vendor={vendor} />
 
       {/* Hero Banner */}
       {vendor.banner_url && (
@@ -95,8 +95,13 @@ export default async function StorePage({ params }: StorePageProps) {
 
           {products && products.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} vendor={vendor} />
+              {products.map((product, index) => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  vendor={vendor} 
+                  priority={index < 4} // Priority load first 4 products
+                />
               ))}
             </div>
           ) : (

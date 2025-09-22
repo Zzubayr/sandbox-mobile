@@ -15,16 +15,17 @@ import { useCart } from "@/lib/cart-context"
 interface ProductCardProps {
   product: Product
   vendor: Vendor
+  priority?: boolean
 }
 
-export function ProductCard({ product, vendor }: ProductCardProps) {
+export function ProductCard({ product, vendor, priority = false }: ProductCardProps) {
   const colors = getThemeColors(vendor.theme_color)
   const { dispatch } = useCart()
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    dispatch({ type: "ADD_ITEM", product, quantity: 1 })
+    dispatch.addItem(product, 1)
   }
 
   return (
@@ -39,6 +40,9 @@ export function ProductCard({ product, vendor }: ProductCardProps) {
               className="object-cover group-hover:scale-105 transition-transform duration-300"
               quality="auto"
               crop="fill"
+              priority={priority}
+              placeholder="blur"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">

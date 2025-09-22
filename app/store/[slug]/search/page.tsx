@@ -144,7 +144,7 @@ export default function SearchPage({ params }: SearchPageProps) {
   }
 
   const handleAddToCart = (product: Product) => {
-    dispatch({ type: "ADD_ITEM", product, quantity: 1 })
+    dispatch.addItem(product, 1)
   }
 
   const filteredProducts = products.filter(product => {

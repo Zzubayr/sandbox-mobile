@@ -75,7 +75,7 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     if (!product) return
-    dispatch({ type: "ADD_ITEM", product, quantity })
+    dispatch.addItem(product, quantity)
   }
 
   const handleCheckout = () => {
@@ -101,7 +101,7 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <StorefrontHeader vendor={vendor} />
+        <StorefrontHeader vendor={vendor} />
 
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-4 md:mb-6">
@@ -254,10 +254,17 @@ export default function ProductPage() {
           <CardContent className="p-4 md:p-6">
             <div className="flex items-center gap-4">
               {vendor.logo_url ? (
-                <img
-                  src={vendor.logo_url || "/placeholder.svg"}
+                <CloudinaryImage
+                  src={vendor.logo_url}
                   alt={vendor.store_name}
+                  width={48}
+                  height={48}
                   className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover flex-shrink-0"
+                  quality="auto"
+                  crop="fill"
+                  priority={false}
+                  placeholder="blur"
+                  sizes="(max-width: 768px) 40px, 48px"
                 />
               ) : (
                 <div

@@ -27,11 +27,11 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
   const colors = getThemeColors(vendor.theme_color)
 
   const updateQuantity = (productId: string, quantity: number) => {
-    dispatch({ type: "UPDATE_QUANTITY", productId, quantity })
+    dispatch.updateQuantity(productId, quantity)
   }
 
   const removeItem = (productId: string) => {
-    dispatch({ type: "REMOVE_ITEM", productId })
+    dispatch.removeItem(productId)
     setRemoveDialog({ open: false, productId: null, productTitle: "" })
   }
 

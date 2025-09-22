@@ -6,13 +6,13 @@ import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Copy, ArrowLeft } from "lucide-react"
+import { CheckCircle, Copy, ArrowLeft, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import type { Vendor, Request } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
 import { WhatsAppButton } from "@/components/whatsapp/whatsapp-button"
 import { WhatsAppContactCard } from "@/components/whatsapp/whatsapp-contact-card"
-import { createCustomerRequestMessage } from "@/lib/whatsapp"
+import { createDetailedCustomerRequestMessage } from "@/lib/whatsapp"
 
 export default function RequestSuccessPage() {
   const params = useParams()
@@ -71,8 +71,7 @@ export default function RequestSuccessPage() {
   }, [slug, requestId])
 
   const copyRequestLink = () => {
-    const link = `${window.location.origin}/store/${slug}/request/${requestId}`
-    navigator.clipboard.writeText(link)
+    navigator.clipboard.writeText(requestUrl)
   }
 
   if (loading) {
@@ -95,18 +94,21 @@ export default function RequestSuccessPage() {
 
   const colors = getThemeColors(vendor.theme_color)
 
-  const whatsappMessage = createCustomerRequestMessage({
+  const requestUrl = `${window.location.origin}/store/${slug}/request/${requestId}`
+  
+  const whatsappMessage = createDetailedCustomerRequestMessage({
     vendorNumber: vendor.whatsapp_number || "",
     customerName: request.customer_name,
     requestId: request.id,
     storeName: vendor.store_name,
     totalAmount: request.total_amount,
     itemCount: request.request_items?.length || 0,
+    requestUrl: requestUrl,
   })
 
   return (
     <div className="min-h-screen bg-background">
-      <StorefrontHeader vendor={vendor} />
+        <StorefrontHeader vendor={vendor} />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
@@ -174,6 +176,13 @@ export default function RequestSuccessPage() {
             <Button onClick={copyRequestLink} variant="outline" className="w-full bg-transparent" size="lg">
               <Copy className="mr-2 h-5 w-5" />
               Copy Request Link
+            </Button>
+
+            <Button asChild className="w-full" size="lg" style={{ backgroundColor: colors.primary }}>
+              <Link href={`/store/${slug}/request/${requestId}`}>
+                <ExternalLink className="mr-2 h-5 w-5" />
+                View Request Details
+              </Link>
             </Button>
 
             <div className="flex gap-4">

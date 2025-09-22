@@ -31,7 +31,7 @@ export const CloudinaryImage = memo(function CloudinaryImage({
   fill = false,
   sizes,
   priority = false,
-  placeholder = "empty",
+  placeholder = "blur",
   blurDataURL,
   ...props
 }: CloudinaryImageProps) {
@@ -49,6 +49,7 @@ export const CloudinaryImage = memo(function CloudinaryImage({
         height: fill ? undefined : height,
         quality,
         crop,
+        format: "auto",
       })
     : src
 
@@ -112,6 +113,7 @@ export const CloudinaryImage = memo(function CloudinaryImage({
           style={fill ? { width: '100%', height: '100%' } : { width, height }}
           onLoad={handleLoad}
           onError={handleError}
+          loading={priority ? "eager" : "lazy"}
         />
         
         {isLoading && (
@@ -144,9 +146,10 @@ export const CloudinaryImage = memo(function CloudinaryImage({
         onLoad={handleLoad}
         onError={handleError}
         className={cn(
-          "transition-opacity duration-300",
+          "transition-opacity duration-300 object-cover",
           isLoading ? "opacity-0" : "opacity-100"
         )}
+        quality={typeof quality === "string" ? undefined : quality}
         {...props}
       />
       

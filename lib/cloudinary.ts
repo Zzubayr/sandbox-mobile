@@ -85,13 +85,25 @@ export function getOptimizedImageUrl(
   
   let optimizedUrl = `https://res.cloudinary.com/${cloudName}/image/upload`
   
-  // Add transformations
+  // Add transformations in optimal order for better compression
   const transformations = []
+  
+  // Quality first for better compression
   if (quality) transformations.push(`q_${quality}`)
+  
+  // Format for modern browsers
   if (format) transformations.push(`f_${format}`)
+  
+  // Crop mode
   if (crop) transformations.push(`c_${crop}`)
+  
+  // Dimensions
   if (width) transformations.push(`w_${width}`)
   if (height) transformations.push(`h_${height}`)
+  
+  // Add optimization flags
+  transformations.push('fl_progressive') // Progressive JPEG
+  transformations.push('fl_immutable_cache') // Cache optimization
   
   if (transformations.length > 0) {
     optimizedUrl += `/${transformations.join(',')}`

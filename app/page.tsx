@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { CloudinaryImage } from "@/components/ui/cloudinary-image"
 import { Store, Users, Package, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -182,10 +183,17 @@ export default async function HomePage() {
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       {vendor.logo_url ? (
-                        <img
-                          src={vendor.logo_url || "/placeholder.svg"}
+                        <CloudinaryImage
+                          src={vendor.logo_url}
                           alt={vendor.store_name}
+                          width={48}
+                          height={48}
                           className="h-12 w-12 rounded-full object-cover"
+                          quality="auto"
+                          crop="fill"
+                          priority={false}
+                          placeholder="blur"
+                          sizes="48px"
                         />
                       ) : (
                         <div className="h-12 w-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">

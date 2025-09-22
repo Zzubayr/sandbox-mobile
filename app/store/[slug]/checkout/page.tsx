@@ -18,6 +18,7 @@ import Link from "next/link"
 import { useCart } from "@/lib/cart-context"
 import type { Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
+import { toastHelpers } from "@/lib/toast-helpers"
 
 export default function CheckoutPage() {
   const params = useParams()
@@ -58,11 +59,11 @@ export default function CheckoutPage() {
   }, [slug, router])
 
   useEffect(() => {
-    // Redirect if cart is empty
-    if (!loading && state.items.length === 0) {
+    // Only redirect if cart is empty AND we're sure it's loaded
+    if (!loading && state.isLoaded && state.items.length === 0) {
       router.push(`/store/${slug}`)
     }
-  }, [loading, state.items.length, router, slug])
+  }, [loading, state.isLoaded, state.items.length, router, slug])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,14 +102,17 @@ export default function CheckoutPage() {
 
       if (itemsError) throw itemsError
 
-      // Clear cart
-      dispatch({ type: "CLEAR_CART" })
+      // Show success toast
+      toastHelpers.requestSubmitted()
+
+      // Clear cart only after successful request creation
+      dispatch.clearCart()
 
       // Redirect to success page
       router.push(`/store/${slug}/request-success?requestId=${request.id}`)
     } catch (error) {
       console.error("Error creating request:", error)
-      alert("Failed to create request. Please try again.")
+      toastHelpers.error("Request Failed", "Failed to create request. Please try again.")
     } finally {
       setSubmitting(false)
     }
