@@ -50,6 +50,10 @@ export const CloudinaryImage = memo(function CloudinaryImage({
         quality,
         crop,
         format: "auto",
+        // Add performance optimizations
+        fetch_format: "auto",
+        flags: "progressive",
+        transformation: "f_auto,q_auto,fl_progressive"
       })
     : src
 
@@ -63,6 +67,8 @@ export const CloudinaryImage = memo(function CloudinaryImage({
       height: 20,
       quality: 1,
       crop: "fill",
+      format: "auto",
+      flags: "progressive"
     })
     
     return blurUrl

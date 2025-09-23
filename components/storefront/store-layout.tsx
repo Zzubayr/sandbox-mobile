@@ -3,6 +3,7 @@
 import type React from "react"
 import { useEffect } from "react"
 import { CartProvider } from "@/lib/cart-context"
+import { WishlistProvider } from "@/lib/wishlist-context"
 import { getThemeColors } from "@/lib/theme-colors"
 import type { Vendor } from "@/lib/types"
 
@@ -34,5 +35,11 @@ export default function StoreLayout({ children, vendor }: StoreLayoutProps) {
     document.body.classList.add(`theme-${vendor.theme_color}`)
   }, [vendor.theme_color])
 
-  return <CartProvider>{children}</CartProvider>
+  return (
+    <CartProvider>
+      <WishlistProvider>
+        {children}
+      </WishlistProvider>
+    </CartProvider>
+  )
 }

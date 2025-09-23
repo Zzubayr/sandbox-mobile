@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { ProductCard } from "@/components/storefront/product-card"
 import { MobileActions } from "@/components/storefront/mobile-actions"
+import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getThemeColors } from "@/lib/theme-colors"
@@ -28,6 +29,11 @@ export default async function StorePage({ params }: StorePageProps) {
     notFound()
   }
 
+  // Check if store is approved - if not, show pending approval page
+  if (vendor.approval_status !== 'approved') {
+    return <PendingApprovalPage vendor={vendor} />
+  }
+
   // Get products and categories
   const [{ data: products }, { data: categories }] = await Promise.all([
     supabase
@@ -50,8 +56,13 @@ export default async function StorePage({ params }: StorePageProps) {
 
       {/* Hero Banner */}
       {vendor.banner_url && (
-        <div className="relative h-48 md:h-64 lg:h-80 overflow-hidden">
-          <Image src={vendor.banner_url || "/placeholder.svg"} alt={vendor.store_name} fill className="object-cover" />
+        <div className="relative h-48 md:h-64 lg:h-80 overflow-hidden">          <Image 
+            src={vendor.banner_url || "/placeholder.svg"} 
+            alt={vendor.store_name} 
+            fill 
+            className="object-cover" 
+            priority={true}
+          />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <div className="text-center text-white px-4">
               <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold mb-2 text-balance">{vendor.store_name}</h1>
@@ -127,7 +138,7 @@ export default async function StorePage({ params }: StorePageProps) {
                 <p className="text-sm md:text-base text-muted-foreground mb-4 text-pretty">{vendor.description}</p>
               )}
               <p className="text-xs md:text-sm text-muted-foreground">
-                Powered by <span className="font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Sandbox</span>
+                Powered by <span className="font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Ummah Square</span>
               </p>
             </div>
           </CardContent>

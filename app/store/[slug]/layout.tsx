@@ -12,11 +12,12 @@ export default async function StoreLayoutWrapper({
 }) {
   const supabase = await createClient()
 
-  // Get vendor by slug
+  // Get vendor by slug - allow all active vendors (approved or not)
   const { data: vendor, error } = await supabase
     .from("vendors")
     .select("*")
     .eq("store_slug", params.slug)
+    .eq("is_active", true)
     .single()
 
   if (error || !vendor) {

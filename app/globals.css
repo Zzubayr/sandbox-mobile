@@ -1,6 +1,50 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Spotlight Search Animations */
+@keyframes spotlight-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spotlight-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spotlight-backdrop-blur {
+  from {
+    backdrop-filter: blur(0px);
+  }
+  to {
+    backdrop-filter: blur(8px);
+  }
+}
+
+.spotlight-fade-in {
+  animation: spotlight-fade-in 0.2s ease-out;
+}
+
+.spotlight-slide-up {
+  animation: spotlight-slide-up 0.2s ease-out;
+}
+
+.spotlight-backdrop-blur {
+  animation: spotlight-backdrop-blur 0.2s ease-out;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

@@ -75,3 +75,4 @@ DELETE FROM public.requests WHERE customer_name = 'Test Customer RLS Fix';
 
 -- Step 6: Verify policies are working
 SELECT 'RLS Fix Complete - Test insert successful!' as status;
+

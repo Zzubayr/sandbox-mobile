@@ -1,3 +1,12 @@
+export interface Admin {
+  id: string
+  user_id: string
+  role: 'admin' | 'super_admin'
+  permissions: Record<string, any>
+  created_at: string
+  updated_at: string
+}
+
 export interface Vendor {
   id: string
   user_id: string
@@ -9,6 +18,10 @@ export interface Vendor {
   theme_color: "blue" | "green" | "purple"
   whatsapp_number?: string
   is_active: boolean
+  approval_status: 'pending' | 'approved' | 'rejected'
+  admin_notes?: string
+  approved_by?: string
+  approved_at?: string
   created_at: string
   updated_at: string
 }
@@ -30,6 +43,7 @@ export interface Product {
   description?: string
   price: number
   stock: number
+  unit?: string
   images: string[]
   attributes: Record<string, any>
   status: "active" | "inactive" | "draft"

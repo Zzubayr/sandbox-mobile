@@ -41,6 +41,7 @@ export function CategoryManager({ vendorId, onCategoriesChange }: CategoryManage
         .order("name")
 
       if (error) throw error
+      
       setCategories(data || [])
       onCategoriesChange?.(data || [])
     } catch (error) {
@@ -57,10 +58,18 @@ export function CategoryManager({ vendorId, onCategoriesChange }: CategoryManage
     setIsAdding(true)
     try {
       const supabase = createClient()
+      
+      // Generate slug from category name
+      const slug = newCategoryName.trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+      
       const { data, error } = await supabase
         .from("categories")
         .insert({
           name: newCategoryName.trim(),
+          slug: slug,
           vendor_id: vendorId,
         })
         .select()
@@ -86,9 +95,19 @@ export function CategoryManager({ vendorId, onCategoriesChange }: CategoryManage
     setIsEditing(true)
     try {
       const supabase = createClient()
+      
+      // Generate new slug from updated name
+      const slug = editName.trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+      
       const { data, error } = await supabase
         .from("categories")
-        .update({ name: editName.trim() })
+        .update({ 
+          name: editName.trim(),
+          slug: slug
+        })
         .eq("id", editingCategory.id)
         .select()
         .single()

@@ -51,3 +51,4 @@ FROM pg_policies
 WHERE tablename IN ('requests', 'request_items')
 ORDER BY tablename, policyname;
 
+

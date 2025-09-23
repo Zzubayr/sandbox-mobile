@@ -40,7 +40,7 @@ export function createCustomerRequestMessage(options: WhatsAppMessageOptions): s
 
   const shortRequestId = requestId?.slice(-8) || "N/A"
   const items = itemCount ? `${itemCount} items` : "items"
-  const total = totalAmount ? `$${totalAmount}` : "TBD"
+  const total = totalAmount ? `₦${totalAmount.toLocaleString()}` : "TBD"
 
   // If custom message is provided, use it
   if (message) {
@@ -59,7 +59,7 @@ export function createDetailedCustomerRequestMessage(options: WhatsAppMessageOpt
 
   const shortRequestId = requestId?.slice(-8) || "N/A"
   const items = itemCount ? `${itemCount} items` : "items"
-  const total = totalAmount ? `$${totalAmount}` : "TBD"
+  const total = totalAmount ? `₦${totalAmount.toLocaleString()}` : "TBD"
 
   // If custom message is provided, use it
   if (message) {

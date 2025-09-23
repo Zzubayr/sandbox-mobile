@@ -11,10 +11,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useTheme } from "@/lib/theme-context"
-import { Save, Copy, ExternalLink, Palette, Store, Phone, Image, Check } from "lucide-react"
+import { Save, Copy, ExternalLink, Palette, Store, Phone, Check, Image as ImageIcon } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { CloudinaryUpload } from "@/components/ui/cloudinary-upload"
-import { CloudinaryImage } from "@/components/ui/cloudinary-image"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
@@ -277,19 +277,17 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium flex items-center gap-2 mb-3">
-                    <Image className="w-4 h-4" />
+                    <ImageIcon className="w-4 h-4" />
                     Store Logo
                   </Label>
                   {formData.logo_url ? (
                     <div className="space-y-3">
                       <div className="w-24 h-24 relative border-2 border-slate-200 rounded-lg overflow-hidden">
-                        <CloudinaryImage
+                        <Image
                           src={formData.logo_url}
                           alt="Store Logo"
                           fill
                           className="object-cover"
-                          quality="auto"
-                          crop="fill"
                         />
                       </div>
                       <Button
@@ -315,19 +313,17 @@ export default function SettingsPage() {
 
                 <div>
                   <Label className="text-sm font-medium flex items-center gap-2 mb-3">
-                    <Image className="w-4 h-4" />
+                    <ImageIcon className="w-4 h-4" />
                     Store Banner
                   </Label>
                   {formData.banner_url ? (
                     <div className="space-y-3">
                       <div className="w-full h-32 relative border-2 border-slate-200 rounded-lg overflow-hidden">
-                        <CloudinaryImage
+                        <Image
                           src={formData.banner_url}
                           alt="Store Banner"
                           fill
                           className="object-cover"
-                          quality="auto"
-                          crop="fill"
                         />
                       </div>
                       <Button

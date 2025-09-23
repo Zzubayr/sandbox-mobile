@@ -34,18 +34,18 @@ export function MobileActions({
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 md:hidden z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 md:hidden z-50 shadow-lg">
       <div className="flex gap-3">
         {showAddToCart && onAddToCart && (
-          <Button onClick={onAddToCart} className="flex-1 min-h-[48px]" size="lg" style={{ backgroundColor: colors.primary }}>
+          <Button onClick={onAddToCart} className="flex-1 min-h-[48px] bg-slate-900 hover:bg-slate-800 text-white" size="lg">
             <ShoppingCart className="mr-2 h-5 w-5" />
             Add to Cart
-            {productPrice && <span className="ml-2">${productPrice}</span>}
+            {productPrice && <span className="ml-2">₦{productPrice.toLocaleString()}</span>}
           </Button>
         )}
 
         {showCheckout && onCheckout && state.itemCount > 0 && (
-          <Button onClick={onCheckout} className="flex-1 min-h-[48px]" size="lg" style={{ backgroundColor: colors.primary }}>
+          <Button onClick={onCheckout} className="flex-1 min-h-[48px] bg-slate-900 hover:bg-slate-800 text-white" size="lg">
             <ShoppingCart className="mr-2 h-5 w-5" />
             Checkout ({state.itemCount})
           </Button>
@@ -57,7 +57,7 @@ export function MobileActions({
               vendorNumber: vendor.whatsapp_number,
               message: `Hi ${vendor.store_name}! I'm interested in your products. Can you help me?`,
             }}
-            className="flex-1 min-h-[48px]"
+            className="flex-1 min-h-[48px] bg-slate-900 hover:bg-slate-800 text-white"
             size="lg"
           >
             Contact Store

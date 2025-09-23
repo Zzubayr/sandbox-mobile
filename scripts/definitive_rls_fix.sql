@@ -120,3 +120,4 @@ END $$;
 
 -- Step 8: Final verification
 SELECT 'RLS Fix Complete - Anonymous requests should now work!' as status;
+

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
+import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Copy, ArrowLeft, ExternalLink } from "lucide-react"
@@ -62,6 +63,14 @@ export default function RequestSuccessPage() {
         return
       }
 
+      // Check if store is approved
+      if (vendorData.approval_status !== 'approved') {
+        setVendor(vendorData)
+        setRequest(null) // Don't set request for unapproved stores
+        setLoading(false)
+        return
+      }
+
       setVendor(vendorData)
       setRequest(requestData)
       setLoading(false)
@@ -78,7 +87,26 @@ export default function RequestSuccessPage() {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>
   }
 
-  if (!vendor || !request) {
+  if (!vendor) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Store Not Found</h1>
+          <p className="text-muted-foreground mb-4">The store you're looking for doesn't exist.</p>
+          <Button asChild>
+            <Link href="/">Go Home</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Show pending approval page if store is not approved
+  if (vendor.approval_status !== 'approved') {
+    return <PendingApprovalPage vendor={vendor} />
+  }
+
+  if (!request) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -94,7 +122,9 @@ export default function RequestSuccessPage() {
 
   const colors = getThemeColors(vendor.theme_color)
 
-  const requestUrl = `${window.location.origin}/store/${slug}/request/${requestId}`
+  const requestUrl = typeof window !== 'undefined' 
+    ? `${window.location.origin}/store/${slug}/request/${requestId}`
+    : `/store/${slug}/request/${requestId}`
   
   const whatsappMessage = createDetailedCustomerRequestMessage({
     vendorNumber: vendor.whatsapp_number || "",
@@ -146,7 +176,7 @@ export default function RequestSuccessPage() {
                 <div>
                   <span className="text-muted-foreground">Total:</span>
                   <p className="font-medium text-lg" style={{ color: colors.primary }}>
-                    ${request.total_amount}
+                    ₦{request.total_amount.toLocaleString()}
                   </p>
                 </div>
               </div>

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
+import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -51,6 +52,13 @@ export default function CheckoutPage() {
         return
       }
 
+      // Check if store is approved
+      if (vendorData.approval_status !== 'approved') {
+        setVendor(vendorData)
+        setLoading(false)
+        return
+      }
+
       setVendor(vendorData)
       setLoading(false)
     }
@@ -58,12 +66,12 @@ export default function CheckoutPage() {
     fetchVendor()
   }, [slug, router])
 
-  useEffect(() => {
-    // Only redirect if cart is empty AND we're sure it's loaded
-    if (!loading && state.isLoaded && state.items.length === 0) {
-      router.push(`/store/${slug}`)
-    }
-  }, [loading, state.isLoaded, state.items.length, router, slug])
+  // useEffect(() => {
+  //   // Only redirect if cart is empty AND we're sure it's loaded AND we're not submitting
+  //   if (!loading && state.isLoaded && state.items.length === 0 && !submitting) {
+  //     router.push(`/store/${slug}`)
+  //   }
+  // }, [loading, state.isLoaded, state.items.length, submitting, router, slug])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,7 +99,7 @@ export default function CheckoutPage() {
       if (requestError) throw requestError
 
       // Create request items
-      const requestItems = state.items.map((item) => ({
+      const requestItems = state.items.map((item: { product: any; quantity: number }) => ({
         request_id: request.id,
         product_id: item.product.id,
         quantity: item.quantity,
@@ -129,7 +137,16 @@ export default function CheckoutPage() {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>
   }
 
-  if (!vendor || state.items.length === 0) {
+  if (!vendor) {
+    return null
+  }
+
+  // Show pending approval page if store is not approved
+  if (vendor.approval_status !== 'approved') {
+    return <PendingApprovalPage vendor={vendor} />
+  }
+
+  if (state.items.length === 0) {
     return null
   }
 
@@ -162,7 +179,7 @@ export default function CheckoutPage() {
                 <CardDescription>{state.itemCount} items</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {state.items.map((item) => (
+                {state.items.map((item: { product: any; quantity: number }) => (
                   <div key={item.product.id} className="flex gap-3 md:gap-4">
                     <div className="w-12 h-12 md:w-16 md:h-16 relative bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                       {item.product.images && item.product.images.length > 0 ? (
@@ -181,10 +198,10 @@ export default function CheckoutPage() {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium line-clamp-2 text-sm md:text-base">{item.product.title}</h4>
                       <p className="text-xs md:text-sm text-muted-foreground">
-                        ${item.product.price} × {item.quantity}
+                        ₦{item.product.price.toLocaleString()} × {item.quantity}
                       </p>
                       <p className="font-medium text-sm md:text-base">
-                        ${(item.product.price * item.quantity).toFixed(2)}
+                        ₦{(item.product.price * item.quantity).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -195,7 +212,7 @@ export default function CheckoutPage() {
                 <div className="space-y-2 text-sm md:text-base">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${state.total.toFixed(2)}</span>
+                    <span>₦{state.total.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping:</span>
@@ -204,7 +221,7 @@ export default function CheckoutPage() {
                   <Separator />
                   <div className="flex justify-between text-base md:text-lg font-bold">
                     <span>Total:</span>
-                    <span style={{ color: colors.primary }}>${state.total.toFixed(2)}</span>
+                    <span style={{ color: colors.primary }}>₦{state.total.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>

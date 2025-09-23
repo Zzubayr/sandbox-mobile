@@ -54,30 +54,43 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle>Shopping Cart ({state.itemCount})</SheetTitle>
+      <SheetContent className="w-full sm:max-w-lg flex flex-col p-0">
+        <SheetHeader className="px-6 py-4 border-b bg-slate-50/50">
+          <SheetTitle className="text-lg font-semibold flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Shopping Cart
+            {state.itemCount > 0 && (
+              <span className="bg-slate-900 text-white text-xs px-2 py-1 rounded-full">
+                {state.itemCount}
+              </span>
+            )}
+          </SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col h-full">
           {state.items.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex items-center justify-center px-6">
               <div className="text-center">
-                <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Your cart is empty</h3>
-                <p className="text-muted-foreground mb-4">Add some products to get started</p>
-                <Button onClick={() => setIsOpen(false)} style={{ backgroundColor: colors.primary }}>
+                <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                  <ShoppingCart className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Your cart is empty</h3>
+                <p className="text-slate-500 mb-6">Add some products to get started</p>
+                <Button 
+                  onClick={() => setIsOpen(false)} 
+                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                >
                   Continue Shopping
                 </Button>
               </div>
             </div>
           ) : (
             <>
-              <div className="flex-1 overflow-y-auto py-4">
-                <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="space-y-3">
                   {state.items.map((item) => (
-                    <div key={item.product.id} className="flex gap-4 p-4 border rounded-lg">
-                      <div className="w-16 h-16 relative bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
+                    <div key={item.product.id} className="flex gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                      <div className="w-16 h-16 relative bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                         {item.product.images && item.product.images.length > 0 ? (
                           <Image
                             src={item.product.images[0] || "/placeholder.svg"}
@@ -86,32 +99,32 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
                             className="object-cover"
                           />
                         ) : (
-                          <div className="flex items-center justify-center h-full text-muted-foreground">
+                          <div className="flex items-center justify-center h-full text-slate-400">
                             <ShoppingCart className="h-6 w-6" />
                           </div>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium line-clamp-2">{item.product.title}</h4>
-                        <p className="text-sm text-muted-foreground">${item.product.price}</p>
+                        <h4 className="font-medium text-slate-900 line-clamp-2 mb-1">{item.product.title}</h4>
+                        <p className="text-sm text-slate-600 mb-3">₦{item.product.price.toLocaleString()}</p>
 
-                        <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-9 w-9 bg-transparent min-w-[44px] min-h-[44px]"
+                              className="h-8 w-8 bg-white border-slate-300 hover:bg-slate-50"
                               onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                               disabled={item.quantity <= 1}
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
-                            <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                            <span className="text-sm font-medium w-8 text-center text-slate-900">{item.quantity}</span>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-9 w-9 bg-transparent min-w-[44px] min-h-[44px]"
+                              className="h-8 w-8 bg-white border-slate-300 hover:bg-slate-50"
                               onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                               disabled={item.quantity >= item.product.stock}
                             >
@@ -122,7 +135,7 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 text-red-500 hover:text-red-700 min-w-[44px] min-h-[44px]"
+                            className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
                             onClick={() => handleRemoveClick(item.product.id, item.product.title)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -135,22 +148,22 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
                 </div>
               </div>
 
-              <div className="border-t pt-4 space-y-4">
+              <div className="border-t bg-slate-50/50 px-6 py-4 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">Total:</span>
-                  <span className="text-2xl font-bold" style={{ color: colors.primary }}>
-                    ${state.total.toFixed(2)}
+                  <span className="text-lg font-semibold text-slate-900">Total:</span>
+                  <span className="text-2xl font-bold text-slate-900">
+                    ₦{state.total.toLocaleString()}
                   </span>
                 </div>
 
                 <Button
-                  className="w-full"
-                  size="lg"
-                  style={{ backgroundColor: colors.primary }}
+                  className="w-full h-12 text-base font-medium bg-slate-900 hover:bg-slate-800 text-white"
                   asChild
                   onClick={() => setIsOpen(false)}
                 >
-                  <Link href={`/store/${vendor.store_slug}/checkout`}>Proceed to Checkout</Link>
+                  <Link href={`/store/${vendor.store_slug}/checkout`}>
+                    Proceed to Checkout
+                  </Link>
                 </Button>
               </div>
             </>

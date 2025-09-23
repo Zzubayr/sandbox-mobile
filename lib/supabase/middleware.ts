@@ -37,6 +37,29 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Protect admin routes
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = "/auth/login"
+      return NextResponse.redirect(url)
+    }
+
+    // Check if user is admin
+    const { data: admin } = await supabase
+      .from("admins")
+      .select("id")
+      .eq("user_id", user.id)
+      .single()
+
+    if (!admin) {
+      // Redirect to regular dashboard if not admin
+      const url = request.nextUrl.clone()
+      url.pathname = "/dashboard"
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Protect vendor dashboard routes
   if (request.nextUrl.pathname.startsWith("/dashboard") && !user) {
     const url = request.nextUrl.clone()
@@ -45,6 +68,20 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && request.nextUrl.pathname.startsWith("/dashboard")) {
+    // Check if user is admin first
+    const { data: admin } = await supabase
+      .from("admins")
+      .select("id")
+      .eq("user_id", user.id)
+      .single()
+
+    if (admin) {
+      // Redirect admin to admin dashboard
+      const url = request.nextUrl.clone()
+      url.pathname = "/admin"
+      return NextResponse.redirect(url)
+    }
+
     // Check if user needs onboarding
     const { data: vendor } = await supabase
       .from("vendors")

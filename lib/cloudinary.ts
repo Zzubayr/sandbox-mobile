@@ -55,6 +55,9 @@ export function getOptimizedImageUrl(
     quality?: string | number
     format?: string
     crop?: string
+    fetch_format?: string
+    flags?: string
+    transformation?: string
   } = {}
 ): string {
   // If it's not a Cloudinary URL, return as is
@@ -67,7 +70,10 @@ export function getOptimizedImageUrl(
     height,
     quality = 'auto',
     format = 'auto',
-    crop = 'fill'
+    crop = 'fill',
+    fetch_format,
+    flags,
+    transformation
   } = options
 
   // Extract public ID from Cloudinary URL
@@ -102,8 +108,22 @@ export function getOptimizedImageUrl(
   if (height) transformations.push(`h_${height}`)
   
   // Add optimization flags
-  transformations.push('fl_progressive') // Progressive JPEG
-  transformations.push('fl_immutable_cache') // Cache optimization
+  if (flags) {
+    transformations.push(`fl_${flags}`)
+  } else {
+    transformations.push('fl_progressive') // Progressive JPEG
+    transformations.push('fl_immutable_cache') // Cache optimization
+  }
+  
+  // Add custom transformation if provided
+  if (transformation) {
+    transformations.push(transformation)
+  }
+  
+  // Add fetch format if provided
+  if (fetch_format) {
+    transformations.push(`f_${fetch_format}`)
+  }
   
   if (transformations.length > 0) {
     optimizedUrl += `/${transformations.join(',')}`

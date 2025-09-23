@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useTheme } from "@/lib/theme-context"
 import { Plus, Edit, Trash2, Package, Search, Filter, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
-import { CloudinaryImage } from "@/components/ui/cloudinary-image"
+import Image from "next/image"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { ProductGridSkeleton } from "@/components/ui/loading-skeletons"
 import { CategoryManager } from "@/components/dashboard/category-manager"
@@ -187,7 +187,7 @@ export default function ProductsPage() {
       </div>
 
       {/* Category Manager */}
-      {vendor && (
+      {vendor && !loading && (
         <CategoryManager 
           vendorId={vendor.id} 
           onCategoriesChange={setCategories}
@@ -262,13 +262,11 @@ export default function ProductsPage() {
             <Card key={product.id} className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow">
               <div className="aspect-square relative bg-gradient-to-br from-slate-50 to-slate-100">
                 {product.images && product.images.length > 0 ? (
-                  <CloudinaryImage
+                  <Image
                     src={product.images[0]}
                     alt={product.title}
                     fill
                     className="object-cover"
-                    quality="auto"
-                    crop="fill"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-slate-400">

@@ -54,3 +54,4 @@ WHERE customer_name = 'Anonymous Test Customer';
 
 -- Final result
 SELECT 'Anonymous request creation test completed successfully!' as result;
+

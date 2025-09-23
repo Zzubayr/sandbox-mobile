@@ -193,13 +193,21 @@ export function CloudinaryUpload({
             <div key={index} className="relative group">
               <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow">
                 <div className="aspect-square relative">
-                  <Image
-                    src={url}
-                    alt={`Upload ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                  />
+                  {url.startsWith('blob:') || url.startsWith('data:') ? (
+                    <img
+                      src={url}
+                      alt={`Upload ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={url}
+                      alt={`Upload ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    />
+                  )}
                   
                   {/* Remove Button */}
                   {onRemove && (

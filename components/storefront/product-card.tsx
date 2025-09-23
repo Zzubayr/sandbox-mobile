@@ -5,12 +5,13 @@ import type React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Heart, ShoppingCart } from "lucide-react"
-import { CloudinaryImage } from "@/components/ui/cloudinary-image"
+import { Heart, ShoppingCart, Package } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import type { Product, Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
 import { useCart } from "@/lib/cart-context"
+import { useWishlist } from "@/lib/wishlist-context"
 
 interface ProductCardProps {
   product: Product
@@ -21,6 +22,7 @@ interface ProductCardProps {
 export function ProductCard({ product, vendor, priority = false }: ProductCardProps) {
   const colors = getThemeColors(vendor.theme_color)
   const { dispatch } = useCart()
+  const { dispatch: wishlistDispatch, state: wishlistState } = useWishlist()
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -28,30 +30,39 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
     dispatch.addItem(product, 1)
   }
 
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (wishlistState.items.some((item: Product) => item.id === product.id)) {
+      wishlistDispatch.removeItem(product.id)
+    } else {
+      wishlistDispatch.addItem(product)
+    }
+  }
+
+  const isInWishlist = wishlistState.items.some((item: Product) => item.id === product.id)
+
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border border-slate-200 bg-white">
       <Link href={`/store/${vendor.store_slug}/product/${product.id}`}>
-        <div className="aspect-square relative bg-gray-100 overflow-hidden">
+        <div className="aspect-square relative bg-slate-50 overflow-hidden">
           {product.images && product.images.length > 0 ? (
-            <CloudinaryImage
+            <Image
               src={product.images[0]}
               alt={product.title}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
-              quality="auto"
-              crop="fill"
               priority={priority}
-              placeholder="blur"
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <ShoppingCart className="h-8 w-8 md:h-12 md:w-12" />
+            <div className="flex items-center justify-center h-full text-slate-400">
+              <Package className="h-12 w-12" />
             </div>
           )}
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <Badge variant="secondary" className="text-xs">
+            <div className="absolute inset-0 bg-slate-900/80 flex items-center justify-center">
+              <Badge variant="secondary" className="text-xs bg-white text-slate-900">
                 Out of Stock
               </Badge>
             </div>
@@ -59,44 +70,52 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 bg-white/80 hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+            className={`absolute top-3 right-3 bg-white/90 hover:bg-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-sm ${
+              isInWishlist ? 'opacity-100' : ''
+            }`}
+            onClick={handleWishlistToggle}
           >
-            <Heart className="h-4 w-4" />
+            <Heart className={`h-4 w-4 ${isInWishlist ? 'text-red-500 fill-red-500' : 'text-slate-600'}`} />
           </Button>
         </div>
       </Link>
 
-      <CardContent className="p-3 md:p-4">
-        <div className="space-y-2">
+      <CardContent className="p-4">
+        <div className="space-y-3">
           <Link href={`/store/${vendor.store_slug}/product/${product.id}`}>
-            <h3 className="font-semibold line-clamp-2 hover:underline text-sm md:text-base leading-tight">
+            <h3 className="font-bold line-clamp-2 hover:text-slate-600 transition-colors text-xl leading-tight text-slate-900">
               {product.title}
             </h3>
           </Link>
           {product.description && (
-            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 hidden sm:block">
+            <p className="text-xs text-slate-500 line-clamp-2">
               {product.description}
             </p>
           )}
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-base md:text-lg font-bold truncate" style={{ color: colors.primary }}>
-                ${product.price}
-              </p>
+          <div className="flex sm:items-center sm:justify-between gap-3 flex-col sm:flex-row">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-1">
+                <p className="text-lg font-bold text-slate-900">
+                  ₦{product.price.toLocaleString()}
+                </p>
+                {product.unit && (
+                  <span className="text-sm text-slate-600 font-medium">/{product.unit}</span>
+                )}
+              </div>
               {product.stock > 0 && (
-                <p className="text-xs text-muted-foreground hidden md:block">In Stock: {product.stock}</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {product.stock} in stock
+                </p>
               )}
             </div>
             <Button
               size="sm"
               disabled={product.stock === 0}
               onClick={handleAddToCart}
-              style={{ backgroundColor: colors.primary }}
-              className="hover:opacity-90 text-xs md:text-sm px-3 md:px-4 min-w-[44px] min-h-[44px] flex-shrink-0"
+              className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-2 min-w-[80px] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ShoppingCart className="h-3 w-3 md:h-4 md:w-4 md:mr-2" />
-              <span className="hidden sm:inline">Add to Cart</span>
-              <span className="sm:hidden">Add</span>
+              <ShoppingCart className="h-3 w-3 mr-1" />
+              Add
             </Button>
           </div>
         </div>

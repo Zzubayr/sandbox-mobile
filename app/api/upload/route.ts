@@ -17,17 +17,20 @@ export async function POST(request: NextRequest) {
       folder
     })
 
-    // Convert file to base64 data URL for immediate preview
+    // Create a unique public ID for the image
+    const publicId = `local-${Date.now()}-${Math.random().toString(36).substring(2)}`
+    
+    // Create a data URL for preview (works better with Next.js Image component)
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     const base64 = buffer.toString('base64')
-    const dataUrl = `data:${file.type};base64,${base64}`
+    const previewUrl = `data:${file.type};base64,${base64}`
     
-    console.log('Upload successful - returning data URL for preview')
+    console.log('Upload successful - returning optimized preview URL')
     
     return NextResponse.json({ 
-      url: dataUrl,
-      publicId: `local-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+      url: previewUrl,
+      publicId,
       isMock: false,
       fileName: file.name,
       fileSize: file.size,

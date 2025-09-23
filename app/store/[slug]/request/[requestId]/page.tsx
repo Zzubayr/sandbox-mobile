@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
+import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -77,6 +78,14 @@ export default function CustomerRequestPage() {
           return
         }
 
+        // Check if store is approved
+        if (vendorData.approval_status !== 'approved') {
+          setVendor(vendorData)
+          setRequest(null) // Don't set request for unapproved stores
+          setLoading(false)
+          return
+        }
+
         setVendor(vendorData)
         setRequest(requestData)
       } catch (error) {
@@ -138,7 +147,26 @@ export default function CustomerRequestPage() {
     )
   }
 
-  if (!vendor || !request) {
+  if (!vendor) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Store Not Found</h1>
+          <p className="text-muted-foreground mb-4">The store you're looking for doesn't exist.</p>
+          <Button asChild>
+            <Link href="/">Go Home</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Show pending approval page if store is not approved
+  if (vendor.approval_status !== 'approved') {
+    return <PendingApprovalPage vendor={vendor} />
+  }
+
+  if (!request) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -222,7 +250,7 @@ export default function CustomerRequestPage() {
                       <div>
                         <p className="text-sm text-muted-foreground">Total Amount</p>
                         <p className="font-medium text-lg" style={{ color: colors.primary }}>
-                          ${request.total_amount}
+                          ₦{request.total_amount.toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -255,7 +283,7 @@ export default function CustomerRequestPage() {
                           <div className="flex-1">
                             <h4 className="font-medium">{item.product?.title}</h4>
                             <p className="text-sm text-muted-foreground">
-                              Quantity: {item.quantity} × ${item.price}
+                              Quantity: {item.quantity} × ₦{item.price.toLocaleString()}
                             </p>
                             {item.product?.attributes && Object.keys(item.product.attributes).length > 0 && (
                               <div className="mt-2">
@@ -271,7 +299,7 @@ export default function CustomerRequestPage() {
                             )}
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">${(item.quantity * item.price).toFixed(2)}</p>
+                            <p className="font-medium">₦{(item.quantity * item.price).toLocaleString()}</p>
                           </div>
                         </div>
                         {index < (request.request_items?.length || 0) - 1 && (
