@@ -245,11 +245,11 @@ export default function LoginPage() {
         <div className="text-center mt-8">
           <p className="text-xs text-slate-500">
             By signing in, you agree to our{" "}
-            <Link href="/terms" className="text-blue-600 hover:text-blue-700">
+            <Link href="https://www.ummahsquare.com.ng/policies/legal" className="text-blue-600 hover:text-blue-700">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-blue-600 hover:text-blue-700">
+            <Link href="https://www.ummahsquare.com.ng/policies/privacy" className="text-blue-600 hover:text-blue-700">
               Privacy Policy
             </Link>
           </p>
