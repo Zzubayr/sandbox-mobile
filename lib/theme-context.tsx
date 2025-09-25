@@ -22,35 +22,45 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const colors = getThemeColors(theme)
 
+  // Only hit Supabase on protected routes to avoid extra network calls on public pages
+  const isProtectedRoute = () => {
+    if (typeof window === 'undefined') return false
+    const p = window.location.pathname
+    return p.startsWith('/dashboard') || p.startsWith('/admin')
+  }
+
   const setTheme = async (newTheme: Theme) => {
     setThemeState(newTheme)
     applyThemeToDocument(newTheme)
     
-    // Save theme to user's vendor profile
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: vendor } = await supabase
-          .from('vendors')
-          .select('id')
-          .eq('user_id', user.id)
-          .single()
-        
-        if (vendor) {
-          await supabase
+    // Save theme to user's vendor profile only on protected routes
+    if (isProtectedRoute()) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: vendor } = await supabase
             .from('vendors')
-            .update({ theme_color: newTheme })
-            .eq('id', vendor.id)
+            .select('id')
+            .eq('user_id', user.id)
+            .single()
+          
+          if (vendor) {
+            await supabase
+              .from('vendors')
+              .update({ theme_color: newTheme })
+              .eq('id', vendor.id)
+          }
         }
+      } catch (error) {
+        console.error('Error saving theme:', error)
       }
-    } catch (error) {
-      console.error('Error saving theme:', error)
     }
   }
 
   useEffect(() => {
     const loadUserTheme = async () => {
       try {
+        if (!isProtectedRoute()) return
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           const { data: vendor } = await supabase
@@ -72,7 +82,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     loadUserTheme()
-  }, [supabase])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, colors, isLoading }}>
