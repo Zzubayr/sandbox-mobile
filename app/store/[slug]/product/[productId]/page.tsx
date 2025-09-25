@@ -201,14 +201,43 @@ export default function ProductPage() {
                   )}
                 </div>
                 
-                <div className="flex items-baseline gap-2">
-                  <p className="text-3xl md:text-4xl font-bold text-slate-900">
-                    ₦{product.price.toLocaleString()}
-                  </p>
-                  {product.unit && (
-                    <span className="text-lg text-slate-500">/{product.unit}</span>
-                  )}
-                </div>
+                {(() => {
+                  const rawUnit = (product as any)?.attributes?.price_unit || product.unit
+                  const unitLabel = (() => {
+                    switch (rawUnit) {
+                      case 'yard':
+                        return 'yards'
+                      case 'meter':
+                        return 'meters'
+                      case 'lb':
+                        return 'lbs'
+                      case 'piece':
+                        return 'pieces'
+                      case 'set':
+                        return 'sets'
+                      case 'box':
+                        return 'boxes'
+                      case 'pack':
+                        return 'packs'
+                      case 'dozen':
+                        return 'dozen'
+                      case 'kg':
+                      case 'unit':
+                      default:
+                        return rawUnit || undefined
+                    }
+                  })()
+                  return (
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl md:text-4xl font-bold text-slate-900">
+                        ₦{product.price.toLocaleString()}
+                        {unitLabel && (
+                          <span className="text-lg text-slate-500">/{unitLabel}</span>
+                        )}
+                      </p>
+                    </div>
+                  )
+                })()}
 
                 {product.description && (
                   <p className="text-slate-600 leading-relaxed">
@@ -225,7 +254,37 @@ export default function ProductPage() {
                   <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
                     In Stock
                   </Badge>
-                  <span className="text-sm text-slate-600">{product.stock} units available</span>
+                  {(() => {
+                    const stockRawUnit = (product as any)?.attributes?.stock_unit || 'units'
+                    const stockUnitLabel = (() => {
+                      switch (stockRawUnit) {
+                        case 'yard':
+                          return 'yards'
+                        case 'meter':
+                          return 'meters'
+                        case 'lb':
+                          return 'lbs'
+                        case 'piece':
+                          return 'pieces'
+                        case 'set':
+                          return 'sets'
+                        case 'box':
+                          return 'boxes'
+                        case 'pack':
+                          return 'packs'
+                        case 'dozen':
+                          return 'dozen'
+                        case 'kg':
+                        case 'units':
+                        case 'unit':
+                        default:
+                          return stockRawUnit || 'units'
+                      }
+                    })()
+                    return (
+                      <span className="text-sm text-slate-600">{product.stock} {stockUnitLabel} available</span>
+                    )
+                  })()}
                 </div>
               ) : (
                 <Badge variant="destructive" className="bg-red-50 text-red-700 border-red-200">
@@ -284,17 +343,19 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* Product Attributes */}
+            {/* Product Details */}
             {product.attributes && Object.keys(product.attributes).length > 0 && (
               <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-                <h3 className="font-semibold mb-4 text-slate-900">Product Specifications</h3>
+                <h3 className="font-semibold mb-4 text-slate-900">Product Details</h3>
                 <div className="space-y-3">
-                  {Object.entries(product.attributes).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-slate-100 last:border-b-0">
-                      <span className="text-slate-600 capitalize font-medium">{key}:</span>
-                      <span className="text-slate-900 font-semibold">{String(value)}</span>
-                    </div>
-                  ))}
+                  {Object.entries(product.attributes)
+                    .filter(([key]) => !['price_unit', 'stock_unit'].includes(key))
+                    .map(([key, value]) => (
+                      <div key={key} className="flex justify-between py-2 border-b border-slate-100 last:border-b-0">
+                        <span className="text-slate-600 capitalize font-medium">{key.replace(/_/g, ' ')}:</span>
+                        <span className="text-slate-900 font-semibold">{Array.isArray(value) ? value.join(', ') : String(value)}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             )}

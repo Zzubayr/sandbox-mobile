@@ -305,17 +305,72 @@ export default function ProductsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-2xl font-bold text-slate-800">
-                        ${product.price}
-                        {product.attributes?.price_unit && (
-                          <span className="text-sm font-normal text-slate-500 ml-1">
-                            / {product.attributes.price_unit}
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        Stock: {product.stock} {product.attributes?.stock_unit || 'units'}
-                      </p>
+                      {(() => {
+                        const rawUnit = (product as any)?.attributes?.price_unit || product.unit
+                        const unitLabel = (() => {
+                          switch (rawUnit) {
+                            case 'yard':
+                              return 'yards'
+                            case 'meter':
+                              return 'meters'
+                            case 'lb':
+                              return 'lbs'
+                            case 'piece':
+                              return 'pieces'
+                            case 'set':
+                              return 'sets'
+                            case 'box':
+                              return 'boxes'
+                            case 'pack':
+                              return 'packs'
+                            case 'dozen':
+                              return 'dozen'
+                            case 'kg':
+                            case 'unit':
+                            default:
+                              return rawUnit || undefined
+                          }
+                        })()
+                        const stockRawUnit = (product as any)?.attributes?.stock_unit || 'units'
+                        const stockUnitLabel = (() => {
+                          switch (stockRawUnit) {
+                            case 'yard':
+                              return 'yards'
+                            case 'meter':
+                              return 'meters'
+                            case 'lb':
+                              return 'lbs'
+                            case 'piece':
+                              return 'pieces'
+                            case 'set':
+                              return 'sets'
+                            case 'box':
+                              return 'boxes'
+                            case 'pack':
+                              return 'packs'
+                            case 'dozen':
+                              return 'dozen'
+                            case 'kg':
+                            case 'units':
+                            case 'unit':
+                            default:
+                              return stockRawUnit || 'units'
+                          }
+                        })()
+                        return (
+                          <>
+                            <p className="text-2xl font-bold text-slate-800">
+                              ₦{Number(product.price).toLocaleString()}
+                              {unitLabel && (
+                                <span className="text-sm font-normal text-slate-500 ml-1">/ {unitLabel}</span>
+                              )}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              Stock: {product.stock} {stockUnitLabel}
+                            </p>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
 
@@ -327,7 +382,7 @@ export default function ProductsPage() {
                         .slice(0, 2)
                         .map(([key, value]) => (
                           <div key={key} className="text-xs text-slate-600">
-                            <span className="font-medium">{key}:</span> {value}
+                            <span className="font-medium">{key}:</span> {Array.isArray(value) ? value.join(', ') : String(value)}
                           </div>
                         ))}
                       {Object.keys(product.attributes).length > 2 && (

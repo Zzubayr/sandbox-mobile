@@ -24,6 +24,32 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
   const { dispatch } = useCart()
   const { dispatch: wishlistDispatch, state: wishlistState } = useWishlist()
 
+  const rawUnit = (product as any)?.attributes?.price_unit || product.unit
+  const unitLabel = (() => {
+    switch (rawUnit) {
+      case 'yard':
+        return 'yards'
+      case 'meter':
+        return 'meters'
+      case 'lb':
+        return 'lbs'
+      case 'piece':
+        return 'pieces'
+      case 'set':
+        return 'sets'
+      case 'box':
+        return 'boxes'
+      case 'pack':
+        return 'packs'
+      case 'dozen':
+        return 'dozen'
+      case 'kg':
+      case 'unit':
+      default:
+        return rawUnit || undefined
+    }
+  })()
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -97,10 +123,10 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
               <div className="flex items-baseline gap-1">
                 <p className="text-lg font-bold text-slate-900">
                   ₦{product.price.toLocaleString()}
+                  {unitLabel && (
+                    <span className="text-sm text-slate-600 font-medium">/{unitLabel}</span>
+                  )}
                 </p>
-                {product.unit && (
-                  <span className="text-sm text-slate-600 font-medium">/{product.unit}</span>
-                )}
               </div>
               {product.stock > 0 && (
                 <p className="text-xs text-slate-500 mt-1">

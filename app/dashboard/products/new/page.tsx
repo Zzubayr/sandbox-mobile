@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Save, Plus, X, Image } from "lucide-react"
+import { ArrowLeft, Save, Image } from "lucide-react"
 import Link from "next/link"
 import { CloudinaryUpload } from "@/components/ui/cloudinary-upload"
+import { AttributeEditor } from "@/components/dashboard/attribute-editor"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor, Category } from "@/lib/types"
 
@@ -21,8 +22,7 @@ export default function NewProductPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [newAttribute, setNewAttribute] = useState({ key: "", value: "" })
-  const [attributeValues, setAttributeValues] = useState({} as Record<string, string[]>)
+  // attributes are edited via AttributeEditor and stored as arrays
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -32,7 +32,7 @@ export default function NewProductPage() {
     stock_unit: "unit",
     category_id: "",
     images: [] as string[],
-    attributes: {} as Record<string, string>,
+    attributes: {} as Record<string, any>,
     status: "active" as "active" | "inactive" | "draft",
   })
 
@@ -74,39 +74,7 @@ export default function NewProductPage() {
     fetchData()
   }, [router])
 
-  const addAttribute = () => {
-    if (newAttribute.key && newAttribute.value) {
-      const key = newAttribute.key.toLowerCase().replace(/\s+/g, '_')
-      setFormData({
-        ...formData,
-        attributes: {
-          ...formData.attributes,
-          [key]: newAttribute.value,
-        },
-      })
-      
-      // Add to attribute values for future use
-      if (!attributeValues[key]) {
-        setAttributeValues({
-          ...attributeValues,
-          [key]: [newAttribute.value]
-        })
-      } else if (!attributeValues[key].includes(newAttribute.value)) {
-        setAttributeValues({
-          ...attributeValues,
-          [key]: [...attributeValues[key], newAttribute.value]
-        })
-      }
-      
-      setNewAttribute({ key: "", value: "" })
-    }
-  }
-
-  const removeAttribute = (key: string) => {
-    const newAttributes = { ...formData.attributes }
-    delete newAttributes[key]
-    setFormData({ ...formData, attributes: newAttributes })
-  }
+  // attribute add/remove handled by AttributeEditor
 
   const addImage = (url: string) => {
     setFormData({
@@ -330,91 +298,11 @@ export default function NewProductPage() {
               <CardDescription>Add specifications and features</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Add new attribute */}
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Attribute name (e.g., Material)"
-                  value={newAttribute.key}
-                  onChange={(e) => setNewAttribute({ ...newAttribute, key: e.target.value })}
-                />
-                <Input
-                  placeholder="Value (e.g., Faux Leather)"
-                  value={newAttribute.value}
-                  onChange={(e) => setNewAttribute({ ...newAttribute, value: e.target.value })}
-                />
-                <Button onClick={addAttribute} disabled={!newAttribute.key || !newAttribute.value}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Existing attributes */}
-              {Object.keys(formData.attributes).length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-slate-700">Current Attributes</h4>
-                  {Object.entries(formData.attributes).map(([key, value]) => (
-                    <div key={key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                      <div className="flex-1">
-                        <Label className="text-sm font-medium text-slate-700 capitalize">
-                          {key.replace(/_/g, ' ')}
-                        </Label>
-                        <Input
-                          value={value}
-                          onChange={(e) => {
-                            const newAttributes = { ...formData.attributes }
-                            newAttributes[key] = e.target.value
-                            setFormData({ ...formData, attributes: newAttributes })
-                          }}
-                          className="mt-1"
-                        />
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeAttribute(key)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Suggested attributes based on existing keys */}
-              {Object.keys(attributeValues).length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-slate-700">Quick Add from Previous Products</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {Object.entries(attributeValues).map(([key, values]) => (
-                      <div key={key} className="p-2 border rounded-lg">
-                        <Label className="text-xs font-medium text-slate-600 capitalize">
-                          {key.replace(/_/g, ' ')}
-                        </Label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {values.slice(0, 3).map((value) => (
-                            <Button
-                              key={value}
-                              variant="outline"
-                              size="sm"
-                              className="text-xs h-6"
-                              onClick={() => {
-                                const newAttributes = { ...formData.attributes }
-                                newAttributes[key] = value
-                                setFormData({ ...formData, attributes: newAttributes })
-                              }}
-                            >
-                              {value}
-                            </Button>
-                          ))}
-                          {values.length > 3 && (
-                            <span className="text-xs text-slate-500">+{values.length - 3} more</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AttributeEditor
+                attributes={formData.attributes}
+                excludeKeys={["price_unit","stock_unit"]}
+                onChange={(next) => setFormData({ ...formData, attributes: next })}
+              />
             </CardContent>
           </Card>
         </div>
