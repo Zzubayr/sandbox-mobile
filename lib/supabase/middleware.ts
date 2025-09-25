@@ -37,6 +37,23 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // If user is already authenticated and trying to access auth pages,
+  // redirect them to their appropriate dashboard.
+  if (request.nextUrl.pathname.startsWith("/auth")) {
+    if (user) {
+      // Check if user is admin
+      const { data: admin } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("user_id", user.id)
+        .single()
+
+      const url = request.nextUrl.clone()
+      url.pathname = admin ? "/admin" : "/dashboard"
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Protect admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
     if (!user) {

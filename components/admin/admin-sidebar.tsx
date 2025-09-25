@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { 
   Users, 
-  BarChart3, 
-  Settings, 
   Shield, 
   Home,
   Package,
@@ -19,14 +17,10 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: Home },
   { name: "Vendor Management", href: "/admin/vendors", icon: Users },
   { name: "Admin Management", href: "/admin/admins", icon: Shield },
-  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
 const quickStats = [
   { name: "Total Vendors", href: "/admin/vendors", icon: Users },
-  { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
 
 interface AdminSidebarProps {

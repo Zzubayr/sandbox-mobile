@@ -4,7 +4,7 @@ import type React from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Bell, User, LogOut, Settings, Menu } from "lucide-react"
+import { Bell, User, LogOut, Menu } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +59,12 @@ export function AdminHeader({ userEmail, onMenuClick }: AdminHeaderProps) {
             <Bell className="h-4 w-4" />
           </Button>
 
+          {/* Visible logout button */}
+          <Button variant="outline" onClick={handleLogout} className="hidden md:inline-flex">
+            <LogOut className="mr-2 h-4 w-4" />
+            Log out
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -80,11 +86,6 @@ export function AdminHeader({ userEmail, onMenuClick }: AdminHeaderProps) {
                   )}
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/admin/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Admin Settings
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
