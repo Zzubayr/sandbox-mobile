@@ -8,13 +8,18 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getThemeColors } from "@/lib/theme-colors"
 import Image from "next/image"
+import Link from "next/link"
 
 interface StorePageProps {
   params: Promise<{ slug: string }>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function StorePage({ params }: StorePageProps) {
+export default async function StorePage({ params, searchParams }: StorePageProps) {
   const { slug } = await params
+  const sp = (await searchParams) || {}
+  const selectedCategoryParam = Array.isArray(sp.category) ? sp.category[0] : sp.category
+
   const supabase = await createClient()
 
   // Get vendor by slug
@@ -35,16 +40,24 @@ export default async function StorePage({ params }: StorePageProps) {
   }
 
   // Get products and categories
-  const [{ data: products }, { data: categories }] = await Promise.all([
-    supabase
-      .from("products")
-      .select(`
+  const productsQuery = supabase
+    .from("products")
+    .select(`
         *,
         category:categories (name)
       `)
-      .eq("vendor_id", vendor.id)
-      .eq("status", "active")
-      .order("created_at", { ascending: false }),
+    .eq("vendor_id", vendor.id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+
+  // Apply category filter if provided
+  const categoryIdFilter = selectedCategoryParam ? String(selectedCategoryParam) : undefined
+  const productsPromise = categoryIdFilter
+    ? productsQuery.eq("category_id", categoryIdFilter)
+    : productsQuery
+
+  const [{ data: products }, { data: categories }] = await Promise.all([
+    productsPromise,
     supabase.from("categories").select("*").eq("vendor_id", vendor.id).order("name"),
   ])
 
@@ -80,18 +93,28 @@ export default async function StorePage({ params }: StorePageProps) {
           <div className="mb-6 md:mb-8">
             <h2 className="text-xl md:text-2xl font-bold mb-4">Categories</h2>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline" className="cursor-pointer hover:bg-gray-100 text-xs md:text-sm">
-                All Products
-              </Badge>
-              {categories.map((category) => (
+              <Link href={`/store/${slug}`}>
                 <Badge
-                  key={category.id}
                   variant="outline"
-                  className="cursor-pointer hover:bg-gray-100 text-xs md:text-sm"
-                  style={{ borderColor: colors.primary }}
+                  className={`cursor-pointer text-xs md:text-sm ${!categoryIdFilter ? 'bg-gray-900 text-white hover:bg-gray-800' : 'hover:bg-gray-100'}`}
                 >
-                  {category.name}
+                  All Products
                 </Badge>
+              </Link>
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/store/${slug}?category=${category.id}`}
+                  scroll={false}
+                >
+                  <Badge
+                    variant="outline"
+                    className={`cursor-pointer text-xs md:text-sm ${categoryIdFilter === String(category.id) ? 'bg-gray-900 text-white hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+                    style={{ borderColor: colors.primary }}
+                  >
+                    {category.name}
+                  </Badge>
+                </Link>
               ))}
             </div>
           </div>
@@ -120,7 +143,9 @@ export default async function StorePage({ params }: StorePageProps) {
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold mb-2">No products available</h3>
-                  <p className="text-muted-foreground">This store is currently setting up their catalog.</p>
+                  <p className="text-muted-foreground">
+                    {categoryIdFilter ? 'No products found in this category.' : 'This store is currently setting up their catalog.'}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -150,3 +175,4 @@ export default async function StorePage({ params }: StorePageProps) {
     </div>
   )
 }
+
