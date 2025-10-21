@@ -66,8 +66,15 @@ export default function LocationPicker({ value, onChange, placeholder = "Search 
     return () => clearTimeout(handler)
   }, [searchQuery, isFocused])
 
+  const getCoords = (feat: any): [number, number] | undefined => {
+    if (Array.isArray(feat?.center) && feat.center.length >= 2) return feat.center as [number, number]
+    const gc = feat?.geometry?.coordinates
+    if (Array.isArray(gc) && gc.length >= 2) return gc as [number, number]
+    return undefined
+  }
+
   const selectSuggestion = (feature: any) => {
-    const coords = feature?.center as [number, number] | undefined
+    const coords = getCoords(feature)
     if (!coords) return
 
     onChange({
@@ -193,7 +200,8 @@ export default function LocationPicker({ value, onChange, placeholder = "Search 
                   key={feature.id}
                   type="button"
                   className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors text-sm border-b border-slate-100 last:border-b-0"
-                  onClick={() => selectSuggestion(feature)}
+                  onMouseDown={(e) => { e.preventDefault(); selectSuggestion(feature) }}
+                  onTouchStart={(e) => { e.preventDefault(); selectSuggestion(feature) }}
                 >
                   <div className="flex items-start gap-3">
                     <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" />
