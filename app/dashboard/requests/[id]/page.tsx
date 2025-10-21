@@ -190,4 +190,8 @@ export default async function RequestDetailsPage({ params }: { params: { id: str
       </div>
     </div>
   )
+  } catch (err) {
+    console.error('Failed to load request details', err)
+    redirect('/dashboard/requests')
+  }
 }
