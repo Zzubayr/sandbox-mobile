@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+ 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,35 +40,15 @@ export default function RequestsPage() {
 
   const loadData = async () => {
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const vendRes = await fetch('/api/dashboard/me/vendor', { cache: 'no-store' })
+      if (!vendRes.ok) return
+      const vendJson = await vendRes.json()
+      if (!vendJson.vendor) return
+      setVendor(vendJson.vendor)
 
-      // Get vendor info
-      const { data: vendorData } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (!vendorData) return
-
-      setVendor(vendorData)
-
-      // Get requests
-      const { data: requestsData } = await supabase
-        .from("requests")
-        .select(`
-          *,
-          request_items (
-            *,
-            product:products (title)
-          )
-        `)
-        .eq("vendor_id", vendorData.id)
-        .order("created_at", { ascending: false })
-
-      setRequests(requestsData || [])
+      const reqRes = await fetch('/api/dashboard/requests', { cache: 'no-store' })
+      const reqJson = reqRes.ok ? await reqRes.json() : { requests: [] }
+      setRequests(reqJson.requests || [])
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -78,13 +58,12 @@ export default function RequestsPage() {
 
   const updateRequestStatus = async (requestId: string, newStatus: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("requests")
-        .update({ status: newStatus })
-        .eq("id", requestId)
-
-      if (error) throw error
+      const res = await fetch(`/api/dashboard/requests/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (!res.ok) throw new Error('Failed')
 
       setRequests(requests.map(r => 
         r.id === requestId ? { ...r, status: newStatus as any } : r

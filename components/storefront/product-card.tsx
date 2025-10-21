@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, ShoppingCart, Package } from "lucide-react"
 import Image from "next/image"
+import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
 import type { Product, Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
@@ -75,7 +76,7 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
         <div className="aspect-square relative bg-slate-50 overflow-hidden">
           {product.images && product.images.length > 0 ? (
             <Image
-              src={product.images[0]}
+              src={toImageUrl(product.images[0] as any) || "/placeholder.svg"}
               alt={product.title}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -128,9 +129,9 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
                   )}
                 </p>
               </div>
-              {product.stock > 0 && (
-                <p className="text-xs text-slate-500 mt-1">
-                  {product.stock} in stock
+              {product.stock > 0 && product.stock < 5 && (
+                <p className="text-xs text-amber-700 mt-1">
+                  Only {product.stock} left
                 </p>
               )}
             </div>

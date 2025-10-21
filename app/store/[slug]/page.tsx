@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { connectToDatabase } from "@/lib/db/connection"
+import Vendor from "@/lib/db/models/vendor"
+import Product from "@/lib/db/models/product"
+import Category from "@/lib/db/models/category"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { ProductCard } from "@/components/storefront/product-card"
 import { MobileActions } from "@/components/storefront/mobile-actions"
@@ -15,24 +18,24 @@ interface StorePageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
 }
 
+function shapeId<T extends { _id?: any }>(doc: T) {
+  if (!doc) return doc as any
+  const { _id, ...rest } = doc as any
+  return { ...rest, id: _id?.toString?.() }
+}
+
 export default async function StorePage({ params, searchParams }: StorePageProps) {
   const { slug } = await params
   const sp = (await searchParams) || {}
   const selectedCategoryParam = Array.isArray(sp.category) ? sp.category[0] : sp.category
 
-  const supabase = await createClient()
-
+  await connectToDatabase()
   // Get vendor by slug
-  const { data: vendor, error: vendorError } = await supabase
-    .from("vendors")
-    .select("*")
-    .eq("store_slug", slug)
-    .eq("is_active", true)
-    .single()
-
-  if (vendorError || !vendor) {
+  const vendorDoc = await Vendor.findOne({ store_slug: slug, is_active: true }).lean()
+  if (!vendorDoc) {
     notFound()
   }
+  const vendor = shapeId(vendorDoc)
 
   // Check if store is approved - if not, show pending approval page
   if (vendor.approval_status !== 'approved') {
@@ -40,26 +43,20 @@ export default async function StorePage({ params, searchParams }: StorePageProps
   }
 
   // Get products and categories
-  const productsQuery = supabase
-    .from("products")
-    .select(`
-        *,
-        category:categories (name)
-      `)
-    .eq("vendor_id", vendor.id)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-
-  // Apply category filter if provided
   const categoryIdFilter = selectedCategoryParam ? String(selectedCategoryParam) : undefined
-  const productsPromise = categoryIdFilter
-    ? productsQuery.eq("category_id", categoryIdFilter)
-    : productsQuery
-
-  const [{ data: products }, { data: categories }] = await Promise.all([
-    productsPromise,
-    supabase.from("categories").select("*").eq("vendor_id", vendor.id).order("name"),
+  const [productDocs, categoryDocs] = await Promise.all([
+    Product.find({
+      vendor_id: vendorDoc._id,
+      status: "active",
+      ...(categoryIdFilter ? { category_id: categoryIdFilter } : {}),
+    })
+      .sort({ created_at: -1 })
+      .lean(),
+    Category.find({ vendor_id: vendorDoc._id }).sort({ name: 1 }).lean(),
   ])
+
+  const products = productDocs.map(shapeId)
+  const categories = categoryDocs.map(shapeId)
 
   const colors = getThemeColors(vendor.theme_color)
 

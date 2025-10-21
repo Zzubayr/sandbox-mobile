@@ -1,28 +1,20 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { isAdmin, getVendorStats } from "@/lib/admin-utils"
+import { headers } from "next/headers"
 import { AdminDashboard } from "@/components/admin/admin-dashboard"
+import { requireAdmin } from "@/lib/auth/session"
 
 export default async function AdminPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  
-  if (error || !user) {
-    redirect("/auth/login")
+  try {
+    await requireAdmin()
+  } catch {
+    redirect('/auth/login?next=/admin')
   }
 
-  // Check if user is admin
-  const userIsAdmin = await isAdmin(user.id)
-  if (!userIsAdmin) {
-    redirect("/dashboard")
-  }
+  const baseURL = process.env.NEXT_PUBLIC_SITE_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000'
+  const cookie = (await headers()).get('cookie') || ''
+  const res = await fetch(new URL('/api/admin/stats', baseURL).toString(), { cache: 'no-store', headers: { cookie } })
+  const data = res.ok ? await res.json() : null
+  const stats = data?.stats || null
 
-  // Get vendor statistics
-  const stats = await getVendorStats()
-
-  return <AdminDashboard initialStats={stats} />
+  return <AdminDashboard initialStats={stats || undefined} />
 }

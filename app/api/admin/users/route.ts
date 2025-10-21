@@ -1,57 +1,39 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { isAdmin, getAdminRole } from "@/lib/admin-utils"
+export const runtime = "nodejs";
 
-export async function GET(request: NextRequest) {
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth/session";
+import { connectToDatabase } from "@/lib/db/connection";
+import Admin from "@/lib/db/models/admin";
+import User from "@/lib/db/models/user";
+
+export async function GET(_request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { session } = await requireAdmin();
+    await connectToDatabase();
+
+    // Only allow super_admin to see this list
+    const adminDoc = await Admin.findOne({ user_id: session.user.id }).lean();
+    if (!adminDoc || adminDoc.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Forbidden - Super admin access required' }, { status: 403 });
     }
 
-    // Check if user is super admin
-    const adminRole = await getAdminRole(user.id)
-    if (adminRole !== 'super_admin') {
-      return NextResponse.json({ error: "Forbidden - Super admin access required" }, { status: 403 })
-    }
+    const [usersr, adminUsers] = await Promise.all([
+      User.find({}).sort({ _id: -1 }).select({ id: 1, name: 1, email: 1, store_name: 1 }).lean(),
+      Admin.find({}).select({ user_id: 1 }).lean(),
+    ]);
 
-    // Get all vendors (users who have created stores) and existing admins
-    const [vendorsResult, adminsResult] = await Promise.all([
-      supabase
-        .from('vendors')
-        .select('user_id, store_name, email')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('admins')
-        .select('user_id')
-    ])
+    const adminSet = new Set((adminUsers || []).map((a: any) => a.user_id));
+    const users = (usersr || [])
+      .map((u: any) => ({
+        id: u.id || (typeof u._id === 'string' ? u._id : u._id?.toString()),
+        email: u.email || 'Unknown',
+        store_name: u.store_name,
+      }))
+      .filter((u: any) => u.id && !adminSet.has(u.id));
 
-    if (vendorsResult.error) {
-      console.error('Error fetching vendors:', vendorsResult.error)
-      return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 })
-    }
-
-    // Get existing admin user IDs
-    const existingAdminIds = new Set(adminsResult.data?.map(admin => admin.user_id) || [])
-
-    // Transform vendors to users format, excluding existing admins
-    const users = vendorsResult.data
-      ?.filter(vendor => !existingAdminIds.has(vendor.user_id))
-      .map(vendor => ({
-        id: vendor.user_id,
-        email: vendor.email || `${vendor.store_name} (No email)`,
-        store_name: vendor.store_name
-      })) || []
-
-    return NextResponse.json({ users })
+    return NextResponse.json({ users });
   } catch (error) {
-    console.error('Error in users API:', error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('Error in users API:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

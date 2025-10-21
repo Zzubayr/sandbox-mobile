@@ -1,34 +1,19 @@
-import type React from "react"
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { isAdmin } from "@/lib/admin-utils"
-import { AdminLayout } from "@/components/admin/admin-layout"
+import React from "react";
+import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/session";
+import { AdminLayout as AdminShell } from "@/components/admin/admin-layout";
 
-export default async function AdminLayoutWrapper({
+export default async function AdminRootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  
-  if (error || !user) {
-    redirect("/auth/login")
+  try {
+    const { session } = await requireAdmin(); // returns { session, admin }
+    const userEmail = session.user.email as string | undefined;
+    return <AdminShell userEmail={userEmail}>{children}</AdminShell>;
+  } catch {
+    // Not admin or not logged in
+    redirect("/auth/login?next=/admin");
   }
-
-  // Check if user is admin
-  const userIsAdmin = await isAdmin(user.id)
-  if (!userIsAdmin) {
-    redirect("/dashboard") // Redirect to regular dashboard
-  }
-
-  return (
-    <AdminLayout userEmail={user.email}>
-      {children}
-    </AdminLayout>
-  )
 }

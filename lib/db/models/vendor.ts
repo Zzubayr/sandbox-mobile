@@ -1,0 +1,84 @@
+import { Schema, model, models } from 'mongoose';
+
+export type ThemeColor = 'blue' | 'green' | 'purple';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Vendor {
+  user_id: string; // Better Auth user id (string)
+  email?: string;
+  store_name: string;
+  store_slug: string;
+  description?: string;
+  logo_url?: string;
+  banner_url?: string;
+  logo?: { url: string; public_id: string } | null;
+  banner?: { url: string; public_id: string } | null;
+  theme_color: ThemeColor;
+  whatsapp_number?: string;
+  is_active: boolean;
+  approval_status: ApprovalStatus;
+  admin_notes?: string;
+  approved_by?: string; // admin user id (string)
+  approved_at?: Date;
+  business_type?: 'products' | 'services';
+  // Location
+  location?: { type: 'Point'; coordinates: [number, number] };
+  address?: string;
+  placeId?: string;
+  components?: {
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+    [key: string]: any;
+  };
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+const VendorSchema = new Schema<Vendor>({
+  user_id: { type: String, required: true, index: true },
+  email: { type: String, index: true },
+  store_name: { type: String, required: true, trim: true },
+  store_slug: { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
+  description: { type: String },
+  logo_url: { type: String },
+  banner_url: { type: String },
+  logo: { type: Object, default: null },
+  banner: { type: Object, default: null },
+  theme_color: { type: String, enum: ['blue', 'green', 'purple'], default: 'blue' },
+  whatsapp_number: { type: String },
+  is_active: { type: Boolean, default: true },
+  approval_status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  admin_notes: { type: String },
+  approved_by: { type: String },
+  approved_at: { type: Date },
+  business_type: { type: String, enum: ['products', 'services'], default: 'products' },
+  // GeoJSON Point [lng, lat]
+  location: {
+    type: { type: String as unknown as () => 'Point', enum: ['Point'], default: 'Point' } as any,
+    coordinates: { type: [Number], default: undefined },
+  } as any,
+  address: { type: String },
+  placeId: { type: String },
+  components: { type: Object },
+}, {
+  timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+  toJSON: {
+    versionKey: false,
+    virtuals: true,
+    transform(_doc, ret) {
+      if (ret._id) {
+        ret.id = ret._id.toString();
+        delete ret._id;
+      }
+    },
+  },
+});
+
+// Geospatial index for location
+VendorSchema.index({ location: '2dsphere' });
+
+const Vendor = models.Vendor || model<Vendor>('Vendor', VendorSchema);
+export default Vendor;
+

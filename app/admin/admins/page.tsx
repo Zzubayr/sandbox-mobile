@@ -1,32 +1,19 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { isAdmin, getAdminRole } from "@/lib/admin-utils"
+import { headers } from "next/headers"
 import { AdminManagement } from "@/components/admin/admin-management"
+import { requireAdmin } from "@/lib/auth/session"
 
 export default async function AdminAdminsPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  
-  if (error || !user) {
-    redirect("/auth/login")
+  try {
+    const { session } = await requireAdmin()
+    // Only allow super_admins
+    const baseURL = process.env.NEXT_PUBLIC_SITE_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000'
+    const cookie = (await headers()).get('cookie') || ''
+    const res = await fetch(new URL('/api/admin/admins', baseURL).toString(), { cache: 'no-store', headers: { cookie } })
+    if (res.status === 403) redirect('/admin')
+    const data = res.ok ? await res.json() : { admins: [] }
+    return <AdminManagement initialAdmins={data.admins || []} />
+  } catch {
+    redirect('/auth/login?next=/admin/admins')
   }
-
-  // Check if user is admin
-  const userIsAdmin = await isAdmin(user.id)
-  if (!userIsAdmin) {
-    redirect("/dashboard")
-  }
-
-  // Check if user is super admin
-  const adminRole = await getAdminRole(user.id)
-  if (adminRole !== 'super_admin') {
-    redirect("/admin")
-  }
-
-  // Get all admins (will be fetched client-side with proper vendor info)
-  return <AdminManagement initialAdmins={[]} />
 }

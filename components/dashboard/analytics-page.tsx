@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,20 +47,11 @@ export default function AnalyticsPage() {
 
   const loadAnalyticsData = async () => {
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get vendor info
-      const { data: vendorData } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (!vendorData) return
-
-      setVendor(vendorData)
+      const vendRes = await fetch('/api/dashboard/me/vendor', { cache: 'no-store' })
+      if (!vendRes.ok) return
+      const vendJson = await vendRes.json()
+      if (!vendJson.vendor) return
+      setVendor(vendJson.vendor)
 
       // Calculate date range
       const days = parseInt(timeRange)
@@ -69,47 +59,17 @@ export default function AnalyticsPage() {
       startDate.setDate(startDate.getDate() - days)
 
       // Get all data
-      const [
-        { count: totalProducts },
-        { data: allRequests },
-        { data: recentRequests },
-        { data: allProducts }
-      ] = await Promise.all([
-        supabase
-          .from("products")
-          .select("*", { count: "exact", head: true })
-          .eq("vendor_id", vendorData.id),
-        supabase
-          .from("requests")
-          .select(`
-            *,
-            request_items (
-              *,
-              product:products (id, title)
-            )
-          `)
-          .eq("vendor_id", vendorData.id)
-          .gte("created_at", startDate.toISOString()),
-        supabase
-          .from("requests")
-          .select(`
-            *,
-            request_items (
-              *,
-              product:products (title)
-            )
-          `)
-          .eq("vendor_id", vendorData.id)
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("products")
-          .select("*")
-          .eq("vendor_id", vendorData.id)
+      const [prodsRes, reqsRes, recentRes] = await Promise.all([
+        fetch('/api/dashboard/products', { cache: 'no-store' }),
+        fetch('/api/dashboard/requests', { cache: 'no-store' }),
+        fetch('/api/dashboard/requests', { cache: 'no-store' }),
       ])
-
-      const requests = allRequests || []
-      const products = allProducts || []
+      const productsJson = prodsRes.ok ? await prodsRes.json() : { products: [] }
+      const requestsJson = reqsRes.ok ? await reqsRes.json() : { requests: [] }
+      const recentJson = recentRes.ok ? await recentRes.json() : { requests: [] }
+      const requests = (requestsJson.requests || []).filter((r: any) => new Date(r.created_at) >= startDate)
+      const products = productsJson.products || []
+      const recentRequests = (recentJson.requests || []).slice(0, 10)
 
       // Calculate analytics
       const totalRequests = requests.length

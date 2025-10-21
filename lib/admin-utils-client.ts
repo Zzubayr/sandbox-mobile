@@ -1,64 +1,42 @@
-import { createClient } from "@/lib/supabase/client"
 import type { Admin, Vendor } from "@/lib/types"
 
 /**
  * Check if a user is an admin (client-side)
  */
 export async function isAdminClient(userId: string): Promise<boolean> {
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('admins')
-    .select('id')
-    .eq('user_id', userId)
-    .single()
-  
-  return !!data
+  // Prefer using the server-side requireAdmin or call /api/auth/role from the client
+  const res = await fetch('/api/auth/role', { cache: 'no-store' })
+  if (!res.ok) return false
+  const { role } = await res.json()
+  return !!role
 }
 
 /**
  * Get admin role for a user (client-side)
  */
 export async function getAdminRoleClient(userId: string): Promise<string | null> {
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('admins')
-    .select('role')
-    .eq('user_id', userId)
-    .single()
-  
-  return data?.role || null
+  const res = await fetch('/api/auth/role', { cache: 'no-store' })
+  if (!res.ok) return null
+  const { role } = await res.json()
+  return role ?? null
 }
 
 /**
  * Get admin information for a user (client-side)
  */
 export async function getAdminInfoClient(userId: string): Promise<Admin | null> {
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('admins')
-    .select('*')
-    .eq('user_id', userId)
-    .single()
-  
-  return data
+  // Not exposed as a public API. Use role endpoint or create a new protected API if needed.
+  return null
 }
 
 /**
  * Get all vendors with approval status (client-side, admin only)
  */
 export async function getAllVendorsClient(): Promise<Vendor[]> {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('vendors')
-    .select('*')
-    .order('created_at', { ascending: false })
-  
-  if (error) {
-    console.error('Error fetching vendors:', error)
-    return []
-  }
-  
-  return data || []
+  const res = await fetch('/api/admin/vendors', { cache: 'no-store' })
+  if (!res.ok) return []
+  const { vendors } = await res.json()
+  return vendors || []
 }
 
 /**
@@ -118,7 +96,7 @@ export async function rejectVendor(vendorId: string, adminNotes?: string): Promi
  */
 export async function deleteVendor(vendorId: string): Promise<boolean> {
   try {
-    const response = await fetch(`/api/admin/vendors/${vendorId}`, {
+    const response = await fetch(`/api/admin/vendors?vendorId=${vendorId}`, {
       method: 'DELETE',
     })
 
@@ -145,22 +123,18 @@ export async function getVendorStatsClient(): Promise<{
   rejected: number
   active: number
 }> {
-  const supabase = createClient()
-  
-  const [totalResult, pendingResult, approvedResult, rejectedResult, activeResult] = await Promise.all([
-    supabase.from('vendors').select('id', { count: 'exact', head: true }),
-    supabase.from('vendors').select('id', { count: 'exact', head: true }).eq('approval_status', 'pending'),
-    supabase.from('vendors').select('id', { count: 'exact', head: true }).eq('approval_status', 'approved'),
-    supabase.from('vendors').select('id', { count: 'exact', head: true }).eq('approval_status', 'rejected'),
-    supabase.from('vendors').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('approval_status', 'approved')
-  ])
-  
+  const res = await fetch('/api/admin/stats', { cache: 'no-store' })
+  if (!res.ok) {
+    return { total: 0, pending: 0, approved: 0, rejected: 0, active: 0 }
+  }
+  const data = await res.json()
+  const vendors = data?.vendors || {}
   return {
-    total: totalResult.count || 0,
-    pending: pendingResult.count || 0,
-    approved: approvedResult.count || 0,
-    rejected: rejectedResult.count || 0,
-    active: activeResult.count || 0
+    total: vendors.total || 0,
+    pending: vendors.pending || 0,
+    approved: vendors.approved || 0,
+    rejected: vendors.rejected || 0,
+    active: vendors.active || 0,
   }
 }
 

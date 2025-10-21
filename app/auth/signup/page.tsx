@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,12 +20,13 @@ import {
 } from "lucide-react";
 import logo from "@/public/logo.svg";
 import Image from "next/image";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [storeName, setStoreName] = useState("");
+  const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,101 +36,98 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      toastHelpers.error("Validation Error", "Passwords do not match");
+      const msg = "Passwords do not match";
+      setError(msg);
+      toastHelpers.error("Validation Error", msg);
       setIsLoading(false);
       return;
     }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      toastHelpers.error(
-        "Validation Error",
-        "Password must be at least 6 characters long"
-      );
+    if (password.length < 8) {
+      const msg = "Password must be at least 8 characters long";
+      setError(msg);
+      toastHelpers.error("Validation Error", msg);
       setIsLoading(false);
       return;
     }
 
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await authClient.signUp.email({
         email,
         password,
-        options: {
-          emailRedirectTo: `${siteUrl}/dashboard`,
-          data: {
-            store_name: storeName,
-          },
-        },
+        name,
+        callbackURL: "/auth/post-login",
       });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.user) {
-        toastHelpers.success(
-          "Account Created",
-          "Please check your email to verify your account"
-        );
-        router.push("/auth/signup-success");
-      } else {
-        throw new Error("User creation failed - no user data returned");
-      }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        let errorMessage = error.message;
-        if (error.message.includes("duplicate key")) {
-          errorMessage = "An account with this email already exists";
-        } else if (error.message.includes("database")) {
-          errorMessage = "Database error - please try again or contact support";
-        } else if (error.message.includes("trigger")) {
-          errorMessage = "Account setup error - please try again";
-        }
-        setError(errorMessage);
-        toastHelpers.error("Signup Failed", errorMessage);
-      } else {
-        const errorMessage = "An unexpected error occurred";
-        setError(errorMessage);
-        toastHelpers.error("Signup Failed", errorMessage);
-      }
+      if (error) throw error;
+      toastHelpers.success("Account Created", "Welcome!");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred";
+      setError(errorMessage);
+      toastHelpers.error("Signup Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGoogleSignup = async () => {
-    const supabase = createClient();
+    // If offline, fail fast with a clear message.
+    if (typeof navigator !== "undefined" && navigator && navigator.onLine === false) {
+      const msg = "You appear to be offline. Please check your connection.";
+      setError(msg);
+      toastHelpers.networkError();
+      return;
+    }
+
     setIsGoogleLoading(true);
     setError(null);
 
-    try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${siteUrl}/auth/callback`,
-        },
-      });
+    // Fallback: if the auth endpoint errors or does not redirect
+    // (e.g., backend 500), show a toast and re-enable the button.
+    const timeout = setTimeout(() => {
+      if (isGoogleLoading) {
+        const msg = "Google sign-in did not start. Please try again.";
+        setError(msg);
+        toastHelpers.error("Google Signup Failed", msg);
+        setIsGoogleLoading(false);
+      }
+    }, 7000);
 
-      if (error) throw error;
-    } catch (error: unknown) {
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/auth/post-login",
+        errorCallbackURL: "/auth/signup",
+      });
+      clearTimeout(timeout);
+      setIsGoogleLoading(false);
+    } catch (err: unknown) {
+      clearTimeout(timeout);
       const errorMessage =
-        error instanceof Error ? error.message : "Google signup failed";
+        err instanceof Error ? err.message : "Google signup failed";
       setError(errorMessage);
-      toastHelpers.error("Google Signup Failed", errorMessage);
+      if (
+        typeof errorMessage === "string" &&
+        (errorMessage.toLowerCase().includes("network") ||
+          errorMessage.toLowerCase().includes("econnrefused") ||
+          errorMessage.toLowerCase().includes("mongodb"))
+      ) {
+        toastHelpers.error(
+          "Google Signup Failed",
+          "A server connection error occurred. Please try again."
+        );
+      } else {
+        toastHelpers.error("Google Signup Failed", errorMessage);
+      }
       setIsGoogleLoading(false);
     }
   };
 
   const passwordRequirements = [
-    { text: "At least 6 characters", met: password.length >= 6 },
+    { text: "At least 8 characters", met: password.length >= 8 },
     {
       text: "Contains letters and numbers",
       met: /[A-Za-z]/.test(password) && /[0-9]/.test(password),
@@ -161,27 +158,27 @@ export default function SignupPage() {
             <h2 className="text-2xl font-semibold text-slate-800 mb-2">
               Create Account
             </h2>
-            <p className="text-slate-600">Set up your vendor store</p>
+            <p className="text-slate-600">Create your vendor Account</p>
           </div>
 
           <form onSubmit={handleSignup} className="space-y-6">
-            {/* Store Name Field */}
+            {/* Name Field */}
             <div className="space-y-2">
               <Label
-                htmlFor="storeName"
+                htmlFor="name"
                 className="text-sm font-medium text-slate-700"
               >
-                Store Name
+                Full Name
               </Label>
               <div className="relative">
-                <Store className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  id="storeName"
+                  id="name"
                   type="text"
                   placeholder="My Awesome Store"
                   required
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   className="pl-10 h-12 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
@@ -334,7 +331,7 @@ export default function SignupPage() {
               type="submit"
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
               disabled={
-                isLoading || password !== confirmPassword || password.length < 6
+                isLoading || password !== confirmPassword || password.length < 8
               }
             >
               {isLoading ? (
@@ -419,11 +416,17 @@ export default function SignupPage() {
         <div className="text-center mt-8">
           <p className="text-xs text-slate-500">
             By creating an account, you agree to our{" "}
-            <Link href="https://www.ummahsquare.com.ng/policies/legal" className="text-blue-600 hover:text-blue-700">
+            <Link
+              href="https://www.ummahsquare.com.ng/policies/legal"
+              className="text-blue-600 hover:text-blue-700"
+            >
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="https://www.ummahsquare.com.ng/policies/privacy" className="text-blue-600 hover:text-blue-700">
+            <Link
+              href="https://www.ummahsquare.com.ng/policies/privacy"
+              className="text-blue-600 hover:text-blue-700"
+            >
               Privacy Policy
             </Link>
           </p>

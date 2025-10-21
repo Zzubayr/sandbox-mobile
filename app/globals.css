@@ -346,3 +346,66 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 }
+
+/* Subtle background animations for homepage */
+@layer utilities {
+  /* Dotted grid pattern that gently drifts */
+  .bg-grid {
+    background-image: radial-gradient(rgba(148, 163, 184, 0.35) 1px, transparent 1px);
+    background-size: 18px 18px;
+    background-position: 0 0;
+  }
+
+  @keyframes gridShift {
+    from { background-position: 0 0; }
+    to { background-position: 120px 60px; }
+  }
+
+  .animate-grid-slow { animation: gridShift 60s linear infinite; }
+
+  /* Soft blue glow orbs with very low opacity */
+  .orb {
+    filter: blur(40px);
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .orb-blue {
+    background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.25), rgba(37, 99, 235, 0) 65%);
+  }
+
+  @keyframes orbFloat {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(12px, -8px, 0) scale(1.02); }
+    100% { transform: translate3d(-8px, 10px, 0) scale(1); }
+  }
+
+  .animate-orb { animation: orbFloat 18s ease-in-out infinite alternate; }
+  .animate-orb-delay { animation-delay: 6s; }
+}
+
+/* Random drifting shapes for background depth */
+@layer utilities {
+  .shape { position: absolute; opacity: 0.14; pointer-events: none; }
+  .shape-blur { filter: blur(1.5px); }
+  .shape-circle { border-radius: 9999px; background: rgba(37,99,235,0.12); }
+  .shape-square { border-radius: 10px; background: rgba(37,99,235,0.09); border: 1px solid rgba(37,99,235,0.18); }
+  .shape-triangle { background: rgba(37,99,235,0.10); clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+
+  @keyframes drift1 {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(28px, -18px, 0) rotate(18deg); }
+  }
+  @keyframes drift2 {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(-24px, 16px, 0) rotate(-16deg); }
+  }
+  @keyframes drift3 {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to   { transform: translate3d(16px, 22px, 0) rotate(12deg); }
+  }
+
+  .shape-drift-1 { animation: drift1 32s ease-in-out infinite alternate; }
+  .shape-drift-2 { animation: drift2 38s ease-in-out infinite alternate; }
+  .shape-drift-3 { animation: drift3 44s ease-in-out infinite alternate; }
+}

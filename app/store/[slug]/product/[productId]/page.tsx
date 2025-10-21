@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { notFound, useParams, useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { MobileActions } from "@/components/storefront/mobile-actions"
 import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
@@ -12,12 +11,14 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Heart, ShoppingCart, Minus, Plus, ArrowLeft, Package } from "lucide-react"
 import Image from "next/image"
+import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
 import type { Product, Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
 import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { ProductPageSkeleton } from "@/components/ui/loading-skeleton"
+import { getContrastingTextColor } from "@/lib/color-utils"
 
 export default function ProductPage() {
   const params = useParams()
@@ -36,49 +37,29 @@ export default function ProductPage() {
 
   useEffect(() => {
     async function fetchData() {
-      const supabase = createClient()
-
-      // Get vendor by slug
-      const { data: vendorData, error: vendorError } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("store_slug", slug)
-        .eq("is_active", true)
-        .single()
-
-      if (vendorError || !vendorData) {
-        notFound()
-        return
-      }
-
-      // Get product
-      const { data: productData, error: productError } = await supabase
-        .from("products")
-        .select(`
-          *,
-          category:categories (name)
-        `)
-        .eq("id", productId)
-        .eq("vendor_id", vendorData.id)
-        .eq("status", "active")
-        .single()
-
-      if (productError || !productData) {
-        notFound()
-        return
-      }
-
-      // Check if store is approved
-      if (vendorData.approval_status !== 'approved') {
-        setVendor(vendorData)
-        setProduct(null) // Don't set product for unapproved stores
+      try {
+        const res = await fetch(`/api/store/${slug}/product/${productId}`, { cache: 'no-store' })
+        if (!res.ok) {
+          notFound()
+          return
+        }
+        const { vendor, product } = await res.json()
+        if (!vendor) {
+          notFound()
+          return
+        }
+        if (vendor.approval_status !== 'approved') {
+          setVendor(vendor)
+          setProduct(null)
+          setLoading(false)
+          return
+        }
+        setVendor(vendor)
+        setProduct(product)
         setLoading(false)
-        return
+      } catch (e) {
+        notFound()
       }
-
-      setVendor(vendorData)
-      setProduct(productData)
-      setLoading(false)
     }
 
     fetchData()
@@ -150,13 +131,17 @@ export default function ProductPage() {
           <div className="space-y-4">
             <div className="aspect-square relative bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
               {product.images && product.images.length > 0 ? (
-                <Image
-                  src={product.images[selectedImageIndex] || product.images[0]}
-                  alt={product.title}
-                  fill
-                  className="object-cover"
-                  priority={true}
-                />
+                (() => {
+                  const cover = (product.images[selectedImageIndex]
+                    ? toImageUrl(product.images[selectedImageIndex] as any)
+                    : toImageUrl(product.images[0] as any)) || "/placeholder.svg"
+                  const isData = cover.startsWith('data:') || cover.startsWith('blob:')
+                  return isData ? (
+                    <img src={cover} alt={product.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Image src={cover} alt={product.title} fill className="object-cover" priority />
+                  )
+                })()
               ) : (
                 <div className="flex items-center justify-center h-full text-slate-400">
                   <Package className="h-24 w-24" />
@@ -176,12 +161,15 @@ export default function ProductPage() {
                         : "border-slate-200 hover:border-slate-300"
                     }`}
                   >
-                    <Image
-                      src={image || "/placeholder.svg"}
-                      alt={`${product.title} ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
+                    {(() => {
+                      const src = toImageUrl(image as any) || "/placeholder.svg"
+                      const isData = src.startsWith('data:') || src.startsWith('blob:')
+                      return isData ? (
+                        <img src={src} alt={`${product.title} ${index + 1}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <Image src={src} alt={`${product.title} ${index + 1}`} fill className="object-cover" />
+                      )
+                    })()}
                   </button>
                 ))}
               </div>
@@ -254,7 +242,7 @@ export default function ProductPage() {
                   <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
                     In Stock
                   </Badge>
-                  {(() => {
+                  {product.stock < 5 && (() => {
                     const stockRawUnit = (product as any)?.attributes?.stock_unit || 'units'
                     const stockUnitLabel = (() => {
                       switch (stockRawUnit) {
@@ -282,7 +270,7 @@ export default function ProductPage() {
                       }
                     })()
                     return (
-                      <span className="text-sm text-slate-600">{product.stock} {stockUnitLabel} available</span>
+                      <span className="text-sm text-amber-700">Only {product.stock} {stockUnitLabel} left</span>
                     )
                   })()}
                 </div>
@@ -292,6 +280,29 @@ export default function ProductPage() {
                 </Badge>
               )}
             </div>
+
+            {/* Variants Preview */}
+            {(Array.isArray((product as any)?.attributes?.colors) && (product as any).attributes.colors.length > 0) && (
+              <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                <label className="text-sm font-medium text-slate-700 block mb-3">Available Colors</label>
+                <div className="flex flex-wrap gap-2">
+                  {(product as any).attributes.colors.map((c: string) => (
+                    <Badge key={c} className="gap-1" style={{ backgroundColor: c, color: getContrastingTextColor(c), borderColor: 'transparent' }}>{c}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(Array.isArray((product as any)?.attributes?.sizes) && (product as any).attributes.sizes.length > 0) && (
+              <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                <label className="text-sm font-medium text-slate-700 block mb-3">Available Sizes</label>
+                <div className="flex flex-wrap gap-2">
+                  {(product as any).attributes.sizes.map((s: string) => (
+                    <Badge key={s} variant="outline" className="px-3 py-1 text-slate-700 border-slate-300">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Desktop Quantity Selector and Actions */}
             {product.stock > 0 && (

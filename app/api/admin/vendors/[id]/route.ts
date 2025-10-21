@@ -1,68 +1,51 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { isAdmin } from "@/lib/admin-utils"
+export const runtime = "nodejs";
+
+import { NextRequest, NextResponse } from "next/server";
+// Use centralized Cloudinary cleanup endpoint
+import { requireAdmin } from "@/lib/auth/session";
+import { connectToDatabase } from "@/lib/db/connection";
+import Vendor from "@/lib/db/models/vendor";
+import Category from "@/lib/db/models/category";
+import Product from "@/lib/db/models/product";
+import Request from "@/lib/db/models/request";
+import RequestItem from "@/lib/db/models/request-item";
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient()
-    
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    await requireAdmin();
+    await connectToDatabase();
+
+    const vendorId = params.id;
+    try {
+      const origin = new URL(_request.url).origin
+      const prefix = `vendors/${vendorId}`
+      await fetch(`${origin}/api/cloudinary/delete-prefix`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefix }),
+        cache: 'no-store',
+      })
+    } catch {}
+    // Cascade delete like /api/admin/vendors DELETE
+    const requestIds = await Request.find({ vendor_id: vendorId }).distinct("_id");
+    if (requestIds.length > 0) {
+      await RequestItem.deleteMany({ request_id: { $in: requestIds } });
+    }
+    await Request.deleteMany({ vendor_id: vendorId });
+    await Product.deleteMany({ vendor_id: vendorId });
+    await Category.deleteMany({ vendor_id: vendorId });
+
+    const deleted = await Vendor.findByIdAndDelete(vendorId).lean();
+    if (!deleted) {
+      return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
-    // Check if user is admin
-    const userIsAdmin = await isAdmin(user.id)
-    if (!userIsAdmin) {
-      return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 })
-    }
-
-    // Delete vendor and all related data in the correct order
-    // First delete request items
-    await supabase
-      .from('request_items')
-      .delete()
-      .eq('vendor_id', params.id)
-
-    // Then delete requests
-    await supabase
-      .from('requests')
-      .delete()
-      .eq('vendor_id', params.id)
-
-    // Delete products
-    await supabase
-      .from('products')
-      .delete()
-      .eq('vendor_id', params.id)
-
-    // Delete categories
-    await supabase
-      .from('categories')
-      .delete()
-      .eq('vendor_id', params.id)
-
-    // Finally delete the vendor
-    const { error } = await supabase
-      .from('vendors')
-      .delete()
-      .eq('id', params.id)
-
-    if (error) {
-      console.error('Error deleting vendor:', error)
-      return NextResponse.json({ error: "Failed to delete vendor" }, { status: 500 })
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error in delete vendor API:', error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error in delete vendor API:", error);
+    return NextResponse.json({ error: "Forbidden or server error" }, { status: 403 });
   }
 }

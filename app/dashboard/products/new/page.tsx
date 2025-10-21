@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,8 +9,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, Image } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { CloudinaryUpload } from "@/components/ui/cloudinary-upload"
+import { getContrastingTextColor } from "@/lib/color-utils"
+import CloudinaryUploadDeferred, { type PendingFile } from "@/components/ui/cloudinary-upload-deferred"
+import { uploadImageWithMeta } from "@/lib/cloudinary"
 import { AttributeEditor } from "@/components/dashboard/attribute-editor"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor, Category } from "@/lib/types"
@@ -22,6 +24,10 @@ export default function NewProductPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([])
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [catSaving, setCatSaving] = useState(false)
   // attributes are edited via AttributeEditor and stored as arrays
   const [formData, setFormData] = useState({
     title: "",
@@ -36,38 +42,59 @@ export default function NewProductPage() {
     status: "active" as "active" | "inactive" | "draft",
   })
 
+  // Local helpers for variants/attributes UX
+  const addColor = (name: string) => {
+    const val = name.trim()
+    if (!val) return
+    const current: string[] = Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []
+    if (current.includes(val)) return
+    setFormData((prev) => ({
+      ...prev,
+      attributes: { ...prev.attributes, colors: [...current, val] },
+    }))
+  }
+  const removeColor = (name: string) => {
+    const current: string[] = Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []
+    setFormData((prev) => ({
+      ...prev,
+      attributes: { ...prev.attributes, colors: current.filter((c) => c !== name) },
+    }))
+  }
+  const toggleSize = (size: string) => {
+    const current: string[] = Array.isArray(formData.attributes.sizes) ? formData.attributes.sizes : []
+    const set = new Set(current)
+    if (set.has(size)) set.delete(size)
+    else set.add(size)
+    setFormData((prev) => ({
+      ...prev,
+      attributes: { ...prev.attributes, sizes: Array.from(set) },
+    }))
+  }
+  const setWeight = (value: string, unit: string) => {
+    const val = value.trim()
+    const final = val ? `${val} ${unit}` : ""
+    setFormData((prev) => ({
+      ...prev,
+      attributes: { ...prev.attributes, weight: final },
+    }))
+  }
+
   useEffect(() => {
     async function fetchData() {
-      const supabase = createClient()
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
-      if (userError || !user) {
-        router.push("/auth/login")
+      const vendRes = await fetch('/api/dashboard/me/vendor', { cache: 'no-store' })
+      if (!vendRes.ok) {
+        router.push('/auth/login')
         return
       }
-
-      const { data: vendorData, error: vendorError } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (vendorError || !vendorData) {
-        router.push("/auth/login")
+      const vendJson = await vendRes.json()
+      if (!vendJson.vendor) {
+        router.push('/onboarding')
         return
       }
-
-      const { data: categoriesData } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("vendor_id", vendorData.id)
-        .order("name")
-
-      setVendor(vendorData)
-      setCategories(categoriesData || [])
+      setVendor(vendJson.vendor)
+      const catRes = await fetch('/api/dashboard/categories', { cache: 'no-store' })
+      const catJson = catRes.ok ? await catRes.json() : { categories: [] }
+      setCategories(catJson.categories || [])
       setLoading(false)
     }
 
@@ -76,45 +103,97 @@ export default function NewProductPage() {
 
   // attribute add/remove handled by AttributeEditor
 
-  const addImage = (url: string) => {
-    setFormData({
-      ...formData,
-      images: [...formData.images, url],
-    })
+  const onSelectPending = (files: PendingFile[]) => {
+    setPendingFiles((prev) => [...prev, ...files])
   }
 
-  const removeImage = (url: string) => {
-    setFormData({
-      ...formData,
-      images: formData.images.filter((imageUrl) => imageUrl !== url),
-    })
+  const onRemovePending = (previewUrl: string) => {
+    setPendingFiles((prev) => prev.filter((p) => p.previewUrl !== previewUrl))
+    try { URL.revokeObjectURL(previewUrl) } catch {}
   }
 
   const handleSave = async () => {
     if (!vendor) return
 
     setSaving(true)
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase.from("products").insert({
-        vendor_id: vendor.id,
+      if (pendingFiles.length < 1) {
+        toastHelpers.saveError('Please add at least one product image before saving.')
+        setSaving(false)
+        return
+      }
+      const payload = {
         title: formData.title,
-        description: formData.description || null,
+        description: formData.description || undefined,
         price: Number.parseFloat(formData.price),
         stock: Number.parseInt(formData.stock),
-        category_id: formData.category_id || null,
-        images: formData.images,
+        category_id: formData.category_id || undefined,
+        images: [],
+        colors: Array.isArray(formData.attributes.colors) ? formData.attributes.colors : undefined,
+        sizes: Array.isArray(formData.attributes.sizes) ? formData.attributes.sizes : undefined,
+        weight: typeof formData.attributes.weight === 'string' ? formData.attributes.weight : undefined,
         attributes: {
           ...formData.attributes,
           price_unit: formData.price_unit,
           stock_unit: formData.stock_unit,
         },
         status: formData.status,
+      }
+      const res = await fetch('/api/dashboard/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
       })
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        throw new Error(`Create failed (${res.status}): ${errText}`)
+      }
+      const { product } = await res.json()
+      if (!product?.id) {
+        throw new Error('Product was created without an id; aborting uploads')
+      }
 
-      if (error) throw error
+      // Upload pending files to vendors/{vendorId}/products/{productId}
+      const folder = `vendors/${vendor.id}/products/${product.id}`
+      const uploaded = [] as { url: string; public_id: string }[]
+      try {
+        for (let i = 0; i < pendingFiles.length; i++) {
+          const p = pendingFiles[i]
+          const up = await uploadImageWithMeta(p.file, folder, `img-${i + 1}`)
+          uploaded.push(up)
+        }
 
+        const patchRes = await fetch(`/api/dashboard/products/${product.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images: uploaded }),
+          credentials: 'same-origin',
+        })
+        if (!patchRes.ok) {
+          const errText = await patchRes.text().catch(() => '')
+          throw new Error(`Failed to save uploaded images (${patchRes.status}): ${errText}`)
+        }
+      } catch (uploadErr) {
+        // Roll back the presaved product
+        try { await fetch(`/api/dashboard/products/${product.id}`, { method: 'DELETE' }) } catch {}
+        const msg = uploadErr instanceof Error ? uploadErr.message : 'Image upload failed'
+        toastHelpers.uploadError(msg)
+        throw uploadErr
+      }
+
+      // Verify product now has images before navigating
+      try {
+        const verify = await fetch(`/api/dashboard/products/${product.id}`, { cache: 'no-store' })
+        if (verify.ok) {
+          const { product: verified } = await verify.json()
+          if (!verified?.images || verified.images.length === 0) {
+            console.warn('Images missing on verify step; showing placeholder until next refresh')
+          }
+        }
+      } catch {}
+
+      setPendingFiles([])
       toastHelpers.productCreated(formData.title)
       router.push("/dashboard/products")
     } catch (error) {
@@ -251,21 +330,72 @@ export default function NewProductPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select
-                  value={formData.category_id}
-                  onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => setAddingCategory((s) => !s)}>
+                    {addingCategory ? 'Cancel' : '+ Add Category'}
+                  </Button>
+                </div>
+                {addingCategory && (
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="New category name"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          (document.getElementById('btn-create-category-new') as HTMLButtonElement)?.click();
+                        }
+                      }}
+                    />
+                    <Button
+                      id="btn-create-category-new"
+                      disabled={catSaving || !newCategoryName.trim()}
+                      onClick={async () => {
+                        const name = newCategoryName.trim();
+                        if (!name) return;
+                        setCatSaving(true);
+                        try {
+                          const res = await fetch('/api/dashboard/categories', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name }),
+                          })
+                          if (!res.ok) throw new Error('Create category failed')
+                          const { category } = await res.json()
+                          setCategories((prev) => [category, ...prev])
+                          setFormData((prev) => ({ ...prev, category_id: category.id }))
+                          setNewCategoryName("")
+                          setAddingCategory(false)
+                          toastHelpers.success('Category created', name)
+                        } catch (e) {
+                          toastHelpers.saveError('Failed to create category')
+                        } finally {
+                          setCatSaving(false)
+                        }
+                      }}
+                    >
+                      {catSaving ? 'Creating…' : 'Create'}
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -279,14 +409,13 @@ export default function NewProductPage() {
                   <CardDescription>Upload high-quality images to showcase your product</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CloudinaryUpload
-                    onUpload={addImage}
-                    onRemove={removeImage}
-                    existingImages={formData.images}
-                    maxImages={5}
-                    folder="sandbox/products"
-                    label="Upload Product Images"
-                    description="Upload high-quality images (JPG, PNG, WebP, GIF). Max 5MB per image. First image will be the main product photo."
+                  <CloudinaryUploadDeferred
+                    onSelect={onSelectPending}
+                    onRemove={onRemovePending}
+                    pending={pendingFiles}
+                    maxFiles={5}
+                    label="Select Product Images"
+                    description="Preview immediately. Images will upload when you save."
                     className="w-full"
                   />
                 </CardContent>
@@ -298,6 +427,58 @@ export default function NewProductPage() {
               <CardDescription>Add specifications and features</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Variants & Attributes quick UI */}
+              <div className="p-4 rounded-lg border bg-slate-50">
+                <h4 className="font-medium mb-3">Variants & Attributes</h4>
+                {/* Colors */}
+                <div className="mb-4">
+                  <Label className="text-sm mb-2 block">Color Options</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {(Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []).map((c: string) => (
+                      <Badge key={c} className="gap-1" style={{ backgroundColor: c, color: getContrastingTextColor(c), borderColor: "transparent" }}>{c}<button type="button" className="opacity-80 hover:opacity-100" onClick={() => removeColor(c)}>
+                          ×
+                        </button></Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input placeholder="e.g., Red" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = '' } }} />
+                    <Button type="button" variant="outline" onClick={(e) => { const input = (e.currentTarget.parentElement?.querySelector('input')) as HTMLInputElement | null; if (input) { addColor(input.value); input.value = '' } }}>Add Color</Button>
+                  </div>
+                </div>
+
+                {/* Sizes */}
+                <div className="mb-4">
+                  <Label className="text-sm mb-2 block">Size Options</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {['XS','S','M','L','XL','XXL'].map((s) => {
+                      const active = Array.isArray(formData.attributes.sizes) && formData.attributes.sizes.includes(s)
+                      return (
+                        <Button key={s} type="button" variant={active ? 'default' : 'outline'} size="sm" onClick={() => toggleSize(s)}>
+                          {s}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input placeholder="Custom sizes (comma separated)" onKeyDown={(e) => { if (e.key==='Enter'){ e.preventDefault(); const vals = (e.target as HTMLInputElement).value.split(',').map(v=>v.trim()).filter(Boolean); vals.forEach(v=>toggleSize(v)); (e.target as HTMLInputElement).value='' } }} />
+                  </div>
+                </div>
+
+                {/* Weight */}
+                <div className="mb-2">
+                  <Label className="text-sm mb-2 block">Weight</Label>
+                  <div className="flex gap-2">
+                    <Input placeholder="e.g., 1.2" className="w-28" onChange={(e) => setWeight(e.target.value, (document.getElementById('weight-unit') as HTMLSelectElement)?.value || 'kg')} />
+                    <select id="weight-unit" className="border rounded px-2" onChange={(e) => setWeight(((document.querySelector('#weight-unit') as HTMLSelectElement) && (document.querySelector<HTMLInputElement>('input[placeholder="e.g., 1.2"]')?.value || ''))!, e.target.value)}>
+                      <option value="kg">kg</option>
+                      <option value="g">g</option>
+                      <option value="lb">lb</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Saved as a simple string (e.g., "1.2 kg").</p>
+                </div>
+              </div>
+
               <AttributeEditor
                 attributes={formData.attributes}
                 excludeKeys={["price_unit","stock_unit"]}
@@ -337,7 +518,7 @@ export default function NewProductPage() {
             <CardContent className="space-y-2">
               <Button
                 onClick={handleSave}
-                disabled={saving || !formData.title || !formData.price || !formData.stock}
+                disabled={saving || !formData.title || !formData.price || !formData.stock || pendingFiles.length < 1}
                 className="w-full"
               >
                 <Save className="mr-2 h-4 w-4" />
@@ -353,3 +534,11 @@ export default function NewProductPage() {
     </div>
   )
 }
+
+
+
+
+
+
+
+

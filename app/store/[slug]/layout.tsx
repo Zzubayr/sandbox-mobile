@@ -1,7 +1,14 @@
 import type React from "react"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { connectToDatabase } from "@/lib/db/connection"
+import Vendor from "@/lib/db/models/vendor"
 import StoreLayout from "@/components/storefront/store-layout"
+
+function shapeId<T extends { _id?: any }>(doc: T) {
+  if (!doc) return doc as any
+  const { _id, ...rest } = doc as any
+  return { ...rest, id: _id?.toString?.() }
+}
 
 export default async function StoreLayoutWrapper({
   children,
@@ -10,19 +17,10 @@ export default async function StoreLayoutWrapper({
   children: React.ReactNode
   params: { slug: string }
 }) {
-  const supabase = await createClient()
-
-  // Get vendor by slug - allow all active vendors (approved or not)
-  const { data: vendor, error } = await supabase
-    .from("vendors")
-    .select("*")
-    .eq("store_slug", params.slug)
-    .eq("is_active", true)
-    .single()
-
-  if (error || !vendor) {
-    redirect("/")
-  }
+  await connectToDatabase()
+  const vendorDoc = await Vendor.findOne({ store_slug: params.slug, is_active: true }).lean()
+  if (!vendorDoc) redirect("/")
+  const vendor = shapeId(vendorDoc)
 
   return (
     <StoreLayout vendor={vendor}>

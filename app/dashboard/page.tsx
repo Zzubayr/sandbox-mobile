@@ -1,28 +1,18 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import DashboardContent from "@/components/dashboard/dashboard-content"
+import { requireUser } from "@/lib/auth/session"
+import { connectToDatabase } from "@/lib/db/connection"
+import Vendor from "@/lib/db/models/vendor"
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  if (error || !user) {
-    redirect("/auth/login")
+  try {
+    const { user } = await requireUser()
+    await connectToDatabase()
+    const vendor = await Vendor.findOne({ user_id: user.id }).lean()
+    if (!vendor) redirect('/onboarding')
+    if (!vendor.whatsapp_number || !vendor.store_name) redirect('/onboarding')
+    return <DashboardContent />
+  } catch {
+    redirect('/auth/login?next=/dashboard')
   }
-
-  // Get vendor info
-  const { data: vendor } = await supabase.from("vendors").select("*").eq("user_id", user.id).single()
-
-  if (!vendor) {
-    redirect("/auth/login")
-  }
-
-  if (!vendor.whatsapp_number || !vendor.store_name) {
-    redirect("/onboarding")
-  }
-
-  return <DashboardContent />
 }

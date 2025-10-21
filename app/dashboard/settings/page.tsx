@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+ 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,8 @@ import { useTheme } from "@/lib/theme-context"
 import { Save, Copy, ExternalLink, Palette, Store, Phone, Check, Image as ImageIcon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { CloudinaryUpload } from "@/components/ui/cloudinary-upload"
+import CloudinaryUploadDeferred, { type PendingFile } from "@/components/ui/cloudinary-upload-deferred"
+import { uploadImageWithMeta, deleteImage as deleteCloudinaryImage, extractPublicId } from "@/lib/cloudinary"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
@@ -24,6 +25,10 @@ export default function SettingsPage() {
   const [vendor, setVendor] = useState<Vendor | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [pendingLogo, setPendingLogo] = useState<PendingFile[]>([])
+  const [pendingBanner, setPendingBanner] = useState<PendingFile[]>([])
+  const [prevLogoId, setPrevLogoId] = useState<string | null>(null)
+  const [prevBannerId, setPrevBannerId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     store_name: "",
     description: "",
@@ -35,28 +40,17 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function fetchVendor() {
-      const supabase = createClient()
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
-      if (userError || !user) {
-        redirect("/auth/login")
+      const res = await fetch('/api/dashboard/vendor', { cache: 'no-store' })
+      if (!res.ok) {
+        redirect('/auth/login')
         return
       }
-
-      const { data: vendorData, error: vendorError } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (vendorError || !vendorData) {
-        redirect("/auth/login")
+      const json = await res.json()
+      const vendorData = json.vendor
+      if (!vendorData) {
+        redirect('/onboarding')
         return
       }
-
       setVendor(vendorData)
       setFormData({
         store_name: vendorData.store_name,
@@ -66,6 +60,9 @@ export default function SettingsPage() {
         logo_url: vendorData.logo_url || "",
         banner_url: vendorData.banner_url || "",
       })
+      // Track previous Cloudinary public IDs for cleanup on save
+      setPrevLogoId(vendorData.logo?.public_id || extractPublicId(vendorData.logo_url || ""))
+      setPrevBannerId(vendorData.banner?.public_id || extractPublicId(vendorData.banner_url || ""))
       setLoading(false)
     }
 
@@ -76,29 +73,82 @@ export default function SettingsPage() {
     if (!vendor) return
 
     setSaving(true)
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase
-        .from("vendors")
-        .update({
+      // Upload pending branding assets first
+      const updates: any = {}
+      const baseFolder = `vendors/${vendor.id}/branding`
+
+      if (pendingLogo.length > 0) {
+        const uniqueId = `logo-${Date.now()}`
+        const up = await uploadImageWithMeta(pendingLogo[0].file, `${baseFolder}/logo`, uniqueId)
+        updates.logo_url = up.url
+        updates.logo = up
+      }
+      if (pendingBanner.length > 0) {
+        const uniqueId = `banner-${Date.now()}`
+        const up = await uploadImageWithMeta(pendingBanner[0].file, `${baseFolder}/banner`, uniqueId)
+        updates.banner_url = up.url
+        updates.banner = up
+      }
+
+      const res = await fetch('/api/dashboard/vendor', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           store_name: formData.store_name,
-          description: formData.description || null,
-          whatsapp_number: formData.whatsapp_number || null,
+          description: formData.description || undefined,
+          whatsapp_number: formData.whatsapp_number || undefined,
           theme_color: formData.theme_color,
-          logo_url: formData.logo_url || null,
-          banner_url: formData.banner_url || null,
-          updated_at: new Date().toISOString(),
+          logo_url: updates.logo_url ?? (formData.logo_url || undefined),
+          banner_url: updates.banner_url ?? (formData.banner_url || undefined),
+          logo: updates.logo,
+          banner: updates.banner,
         })
-        .eq("id", vendor.id)
+      })
+      if (!res.ok) throw new Error('Failed to save')
+      const { vendor: savedVendor } = await res.json().catch(() => ({ vendor: null }))
 
-      if (error) throw error
-
-      // Update local state
-      setVendor({ ...vendor, ...formData })
+      // Prefer authoritative server response to avoid local drift/caches
+      if (savedVendor) {
+        setVendor(savedVendor)
+        setFormData({
+          store_name: savedVendor.store_name,
+          description: savedVendor.description || "",
+          whatsapp_number: savedVendor.whatsapp_number || "",
+          theme_color: savedVendor.theme_color,
+          logo_url: savedVendor.logo_url || "",
+          banner_url: savedVendor.banner_url || "",
+        })
+      } else {
+        const nextVendor = { ...vendor, ...formData, ...updates }
+        setVendor(nextVendor as any)
+        setFormData((prev) => ({
+          ...prev,
+          logo_url: updates.logo_url ?? prev.logo_url,
+          banner_url: updates.banner_url ?? prev.banner_url,
+        }))
+      }
+      setPendingLogo([])
+      setPendingBanner([])
       // Apply theme immediately
       setTheme(formData.theme_color)
       toastHelpers.settingsSaved()
+
+      // After successful save, clean up previous Cloudinary assets if replaced or removed
+      try {
+        const newLogoId = savedVendor?.logo?.public_id ?? updates.logo?.public_id ?? null
+        const newBannerId = savedVendor?.banner?.public_id ?? updates.banner?.public_id ?? null
+        if (prevLogoId && prevLogoId !== newLogoId) {
+          await deleteCloudinaryImage(prevLogoId)
+          setPrevLogoId(newLogoId)
+        }
+        if (prevBannerId && prevBannerId !== newBannerId) {
+          await deleteCloudinaryImage(prevBannerId)
+          setPrevBannerId(newBannerId)
+        }
+      } catch (e) {
+        console.warn('Branding cleanup warning:', e)
+      }
     } catch (error) {
       console.error("Error saving settings:", error)
       toastHelpers.saveError("Failed to save settings. Please try again.")
@@ -280,11 +330,11 @@ export default function SettingsPage() {
                     <ImageIcon className="w-4 h-4" />
                     Store Logo
                   </Label>
-                  {formData.logo_url ? (
+                    {(formData.logo_url || pendingLogo.length > 0) ? (
                     <div className="space-y-3">
                       <div className="w-24 h-24 relative border-2 border-slate-200 rounded-lg overflow-hidden">
                         <Image
-                          src={formData.logo_url}
+                          src={(pendingLogo[0]?.previewUrl || formData.logo_url) as string}
                           alt="Store Logo"
                           fill
                           className="object-cover"
@@ -293,19 +343,20 @@ export default function SettingsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setFormData({ ...formData, logo_url: "" })}
+                        onClick={() => { setPendingLogo([]); setFormData({ ...formData, logo_url: "" }) }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         Remove Logo
                       </Button>
                     </div>
                   ) : (
-                    <CloudinaryUpload
-                      onUpload={(url) => setFormData({ ...formData, logo_url: url })}
-                      maxImages={1}
-                      folder="sandbox/logos"
-                      label="Upload Store Logo"
-                      description="Upload your store logo (JPG, PNG, WebP, GIF). Max 5MB. Recommended size: 200x200px or square aspect ratio."
+                    <CloudinaryUploadDeferred
+                      onSelect={(files) => setPendingLogo(files.slice(0,1))}
+                      onRemove={(preview) => setPendingLogo((prev) => prev.filter((p) => p.previewUrl !== preview))}
+                      pending={pendingLogo}
+                      maxFiles={1}
+                      label="Select Store Logo"
+                      description="Preview now; uploads on save."
                       className="w-full"
                     />
                   )}
@@ -316,11 +367,11 @@ export default function SettingsPage() {
                     <ImageIcon className="w-4 h-4" />
                     Store Banner
                   </Label>
-                  {formData.banner_url ? (
+                  {(formData.banner_url || pendingBanner.length > 0) ? (
                     <div className="space-y-3">
                       <div className="w-full h-32 relative border-2 border-slate-200 rounded-lg overflow-hidden">
                         <Image
-                          src={formData.banner_url}
+                          src={(pendingBanner[0]?.previewUrl || formData.banner_url) as string}
                           alt="Store Banner"
                           fill
                           className="object-cover"
@@ -329,19 +380,20 @@ export default function SettingsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setFormData({ ...formData, banner_url: "" })}
+                        onClick={() => { setPendingBanner([]); setFormData({ ...formData, banner_url: "" }) }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         Remove Banner
                       </Button>
                     </div>
                   ) : (
-                    <CloudinaryUpload
-                      onUpload={(url) => setFormData({ ...formData, banner_url: url })}
-                      maxImages={1}
-                      folder="sandbox/banners"
-                      label="Upload Store Banner"
-                      description="Upload your store banner (JPG, PNG, WebP, GIF). Max 5MB. Recommended size: 1200x400px for best results."
+                    <CloudinaryUploadDeferred
+                      onSelect={(files) => setPendingBanner(files.slice(0,1))}
+                      onRemove={(preview) => setPendingBanner((prev) => prev.filter((p) => p.previewUrl !== preview))}
+                      pending={pendingBanner}
+                      maxFiles={1}
+                      label="Select Store Banner"
+                      description="Preview now; uploads on save."
                       className="w-full"
                     />
                   )}
@@ -373,9 +425,9 @@ export default function SettingsPage() {
                 {/* Preview Header */}
                 <div className="border-b bg-background/95 p-4">
                   <div className="flex items-center gap-3">
-                    {formData.logo_url ? (
+                    {(formData.logo_url || pendingLogo.length > 0) ? (
                       <img
-                        src={formData.logo_url || "/placeholder.svg"}
+                        src={(pendingLogo[0]?.previewUrl || formData.logo_url || "/placeholder.svg") as string}
                         alt={formData.store_name}
                         className="h-8 w-8 rounded-full object-cover"
                       />
@@ -399,10 +451,10 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Preview Banner */}
-                {formData.banner_url && (
+                {(formData.banner_url || pendingBanner.length > 0) && (
                   <div className="h-32 relative bg-gray-100">
                     <img
-                      src={formData.banner_url || "/placeholder.svg"}
+                      src={(pendingBanner[0]?.previewUrl || formData.banner_url || "/placeholder.svg") as string}
                       alt="Banner"
                       className="w-full h-full object-cover"
                     />

@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTheme } from "@/lib/theme-context"
-import { createClient } from "@/lib/supabase/client"
 import { toastHelpers } from "@/lib/toast-helpers"
 import { DashboardStatsSkeleton } from "@/components/ui/loading-skeletons"
 import { Plus, Eye, Copy, TrendingUp, Package, ShoppingCart, Store, Users, DollarSign, Activity, ExternalLink } from "lucide-react"
@@ -20,6 +19,13 @@ interface Vendor {
   whatsapp_number?: string
 }
 
+interface RequestItemBrief {
+  id: string
+  quantity: number
+  price: number
+  product?: { title: string }
+}
+
 interface Request {
   id: string
   customer_name: string
@@ -27,14 +33,7 @@ interface Request {
   status: "pending" | "completed" | "cancelled"
   total_amount: number
   created_at: string
-  request_items?: Array<{
-    id: string
-    quantity: number
-    price: number
-    product?: {
-      title: string
-    }
-  }>
+  request_items?: RequestItemBrief[]
 }
 
 export default function DashboardContent() {
@@ -44,11 +43,10 @@ export default function DashboardContent() {
     productsCount: 0,
     requestsCount: 0,
     totalRevenue: 0,
-    conversionRate: 0
+    conversionRate: 0,
   })
   const [recentRequests, setRecentRequests] = useState<Request[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
   useEffect(() => {
     loadDashboardData()
@@ -56,60 +54,41 @@ export default function DashboardContent() {
 
   const loadDashboardData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get vendor info
-      const { data: vendorData } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (!vendorData) return
-
+      // Load vendor
+      const vendRes = await fetch('/api/dashboard/me/vendor', { cache: 'no-store' })
+      if (!vendRes.ok) return
+      const vendJson = await vendRes.json()
+      if (!vendJson.vendor) return
+      const vendorData = vendJson.vendor as Vendor
       setVendor(vendorData)
 
-      // Get dashboard stats
-      const [
-        { count: productsCount },
-        { count: requestsCount },
-        { data: requests },
-        { data: recentRequestsData }
-      ] = await Promise.all([
-        supabase.from("products").select("*", { count: "exact", head: true }).eq("vendor_id", vendorData.id),
-        supabase.from("requests").select("*", { count: "exact", head: true }).eq("vendor_id", vendorData.id),
-        supabase.from("requests").select("total_amount, status").eq("vendor_id", vendorData.id),
-        supabase
-          .from("requests")
-          .select(`
-            *,
-            request_items (
-              *,
-              product:products (title)
-            )
-          `)
-          .eq("vendor_id", vendorData.id)
-          .order("created_at", { ascending: false })
-          .limit(5)
+      // Load products and requests
+      const [prodRes, reqRes] = await Promise.all([
+        fetch('/api/dashboard/products', { cache: 'no-store' }),
+        fetch('/api/dashboard/requests', { cache: 'no-store' }),
       ])
+      const productsJson = prodRes.ok ? await prodRes.json() : { products: [] }
+      const requestsJson = reqRes.ok ? await reqRes.json() : { requests: [] }
 
-      // Calculate total revenue
-      const totalRevenue = requests?.reduce((sum, req) => 
-        req.status === 'completed' ? sum + req.total_amount : sum, 0
-      ) || 0
+      const productsCount = (productsJson.products || []).length
+      const requestsArr = (requestsJson.requests || []) as Request[]
+      const requestsCount = requestsArr.length
 
-      // Calculate conversion rate (simplified)
-      const conversionRate = requestsCount > 0 ? ((requests?.filter(r => r.status === 'completed').length || 0) / requestsCount * 100) : 0
+      const totalRevenue = requestsArr.reduce((sum, r) => (r.status === 'completed' ? sum + (r.total_amount || 0) : sum), 0)
+      const completedCount = requestsArr.filter((r) => r.status === 'completed').length
+      const conversionRate = requestsCount > 0 ? (completedCount / requestsCount) * 100 : 0
 
       setStats({
-        productsCount: productsCount || 0,
-        requestsCount: requestsCount || 0,
+        productsCount,
+        requestsCount,
         totalRevenue,
-        conversionRate: Math.round(conversionRate * 10) / 10
+        conversionRate: Math.round(conversionRate * 10) / 10,
       })
 
-      setRecentRequests(recentRequestsData || [])
+      const sortedRecent = [...requestsArr]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5)
+      setRecentRequests(sortedRecent)
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
@@ -125,7 +104,6 @@ export default function DashboardContent() {
       toastHelpers.storeLinkCopied()
     } catch (error) {
       console.error('Failed to copy link:', error)
-      // Fallback for older browsers
       const textArea = document.createElement('textarea')
       textArea.value = storeUrl
       document.body.appendChild(textArea)
@@ -168,7 +146,7 @@ export default function DashboardContent() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">
-              Welcome back, {vendor.store_name}! 👋
+              Welcome back, {vendor.store_name}!
             </h1>
             <p className="text-slate-600">
               Here's what's happening with your store today
@@ -205,12 +183,12 @@ export default function DashboardContent() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-green-800">Total Requests</CardTitle>
             <div className="p-2 rounded-lg bg-green-500">
-              <ShoppingCart className="h-4 w-4 text-white" />
+              <Users className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-900">{stats.requestsCount}</div>
-            <p className="text-xs text-green-700">Customer orders received</p>
+            <p className="text-xs text-green-700">Across all time</p>
           </CardContent>
         </Card>
 
@@ -223,7 +201,7 @@ export default function DashboardContent() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-900">${stats.totalRevenue.toFixed(2)}</div>
-            <p className="text-xs text-purple-700">From completed orders</p>
+            <p className="text-xs text-purple-700">Completed requests</p>
           </CardContent>
         </Card>
 

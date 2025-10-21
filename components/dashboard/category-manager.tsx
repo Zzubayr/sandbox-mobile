@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { toastHelpers } from "@/lib/toast-helpers"
-import { createClient } from "@/lib/supabase/client"
 import { Plus, Edit, Trash2, Package } from "lucide-react"
 import type { Category } from "@/lib/types"
 
@@ -33,17 +32,11 @@ export function CategoryManager({ vendorId, onCategoriesChange }: CategoryManage
 
   const loadCategories = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("vendor_id", vendorId)
-        .order("name")
-
-      if (error) throw error
-      
-      setCategories(data || [])
-      onCategoriesChange?.(data || [])
+      const res = await fetch('/api/dashboard/categories', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed')
+      const json = await res.json()
+      setCategories(json.categories || [])
+      onCategoriesChange?.(json.categories || [])
     } catch (error) {
       console.error("Error loading categories:", error)
       toastHelpers.error("Failed to load categories", "Please try again")
@@ -57,28 +50,15 @@ export function CategoryManager({ vendorId, onCategoriesChange }: CategoryManage
 
     setIsAdding(true)
     try {
-      const supabase = createClient()
-      
-      // Generate slug from category name
-      const slug = newCategoryName.trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-      
-      const { data, error } = await supabase
-        .from("categories")
-        .insert({
-          name: newCategoryName.trim(),
-          slug: slug,
-          vendor_id: vendorId,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      setCategories([...categories, data])
-      onCategoriesChange?.([...categories, data])
+      const res = await fetch('/api/dashboard/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCategoryName.trim() })
+      })
+      if (!res.ok) throw new Error('Failed')
+      const { category } = await res.json()
+      setCategories([...categories, category])
+      onCategoriesChange?.([...categories, category])
       setNewCategoryName("")
       toastHelpers.success("Category Added", `${data.name} has been created`)
     } catch (error) {
@@ -94,28 +74,15 @@ export function CategoryManager({ vendorId, onCategoriesChange }: CategoryManage
 
     setIsEditing(true)
     try {
-      const supabase = createClient()
-      
-      // Generate new slug from updated name
-      const slug = editName.trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-      
-      const { data, error } = await supabase
-        .from("categories")
-        .update({ 
-          name: editName.trim(),
-          slug: slug
-        })
-        .eq("id", editingCategory.id)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      setCategories(categories.map(cat => cat.id === editingCategory.id ? data : cat))
-      onCategoriesChange?.(categories.map(cat => cat.id === editingCategory.id ? data : cat))
+      const res = await fetch(`/api/dashboard/categories/${editingCategory.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editName.trim() })
+      })
+      if (!res.ok) throw new Error('Failed')
+      const { category } = await res.json()
+      setCategories(categories.map(cat => cat.id === editingCategory.id ? category : cat))
+      onCategoriesChange?.(categories.map(cat => cat.id === editingCategory.id ? category : cat))
       setEditingCategory(null)
       setEditName("")
       toastHelpers.success("Category Updated", `${data.name} has been updated`)
@@ -131,14 +98,8 @@ export function CategoryManager({ vendorId, onCategoriesChange }: CategoryManage
     if (!deleteDialog.category) return
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("categories")
-        .delete()
-        .eq("id", deleteDialog.category.id)
-
-      if (error) throw error
-
+      const res = await fetch(`/api/dashboard/categories/${deleteDialog.category.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed')
       setCategories(categories.filter(cat => cat.id !== deleteDialog.category!.id))
       onCategoriesChange?.(categories.filter(cat => cat.id !== deleteDialog.category!.id))
       setDeleteDialog({ open: false, category: null })

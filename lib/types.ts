@@ -10,11 +10,14 @@ export interface Admin {
 export interface Vendor {
   id: string
   user_id: string
+  email?: string
   store_name: string
   store_slug: string
   description?: string
   logo_url?: string
   banner_url?: string
+  logo?: { url: string; public_id: string } | null
+  banner?: { url: string; public_id: string } | null
   theme_color: "blue" | "green" | "purple"
   whatsapp_number?: string
   is_active: boolean
@@ -22,6 +25,12 @@ export interface Vendor {
   admin_notes?: string
   approved_by?: string
   approved_at?: string
+  // Location (GeoJSON [lng, lat])
+  location?: { type: 'Point'; coordinates: [number, number] }
+  address?: string
+  placeId?: string
+  components?: Record<string, any>
+  business_type?: 'products' | 'services'
   created_at: string
   updated_at: string
 }
@@ -44,7 +53,10 @@ export interface Product {
   price: number
   stock: number
   unit?: string
-  images: string[]
+  images: (string | { url: string; public_id: string })[]
+  colors?: string[]
+  sizes?: string[]
+  weight?: string
   attributes: Record<string, any>
   status: "active" | "inactive" | "draft"
   created_at: string

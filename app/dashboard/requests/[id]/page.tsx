@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { requireUser } from "@/lib/auth/session"
+import { connectToDatabase } from "@/lib/db/connection"
+import Vendor from "@/lib/db/models/vendor"
+import Request from "@/lib/db/models/request"
+import RequestItem from "@/lib/db/models/request-item"
+import Product from "@/lib/db/models/product"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,45 +14,35 @@ import { WhatsAppContactCard } from "@/components/whatsapp/whatsapp-contact-card
 import { createVendorContactMessage } from "@/lib/whatsapp"
 
 export default async function RequestDetailsPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient()
+  try {
+    const { user } = await requireUser()
+    await connectToDatabase()
+    const vendor = await Vendor.findOne({ user_id: user.id }).lean()
+    if (!vendor) redirect('/onboarding')
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  if (error || !user) {
-    redirect("/auth/login")
-  }
-
-  // Get vendor info
-  const { data: vendor } = await supabase.from("vendors").select("*").eq("user_id", user.id).single()
-
-  if (!vendor) {
-    redirect("/auth/login")
-  }
-
-  // Get request details
-  const { data: request } = await supabase
-    .from("requests")
-    .select(`
-      *,
-      request_items (
-        *,
-        product:products (title, price, images)
-      )
-    `)
-    .eq("id", params.id)
-    .eq("vendor_id", vendor.id)
-    .single()
-
-  if (!request) {
-    redirect("/dashboard/requests")
-  }
+    const reqDoc = await Request.findOne({ _id: params.id, vendor_id: vendor._id }).lean()
+    if (!reqDoc) redirect('/dashboard/requests')
+    const items = await RequestItem.find({ request_id: reqDoc._id }).lean()
+    const products = await Product.find({ _id: { $in: items.map((i:any)=>i.product_id) } }).lean()
+    const pmap = new Map(products.map((p:any)=>[p._id.toString(), p]))
+    const request = {
+      ...reqDoc,
+      id: reqDoc._id?.toString(),
+      _id: undefined,
+      request_items: items.map((it:any)=>({
+        ...it,
+        id: it._id?.toString(),
+        _id: undefined,
+        product: (()=>{ const p=pmap.get(it.product_id.toString()); return p?{...p, id:p._id?.toString(), _id:undefined}:undefined })()
+      }))
+    }
+    
+    // Reuse existing UI with shaped objects
 
   const whatsappMessage = createVendorContactMessage({
-    vendorNumber: vendor.whatsapp_number || "",
-    customerName: request.customer_name,
-    requestId: request.id,
+    vendorNumber: (vendor as any).whatsapp_number || "",
+    customerName: (request as any).customer_name,
+    requestId: (request as any).id,
   })
 
   return (

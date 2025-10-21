@@ -38,41 +38,8 @@ export const CloudinaryImage = memo(function CloudinaryImage({
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
 
-  // Check if it's a Cloudinary URL or data URL
-  const isCloudinaryUrl = src.includes('cloudinary.com')
-  const isDataUrl = src.startsWith('data:')
-  
-  // Generate optimized URL if it's from Cloudinary
-  const optimizedSrc = isCloudinaryUrl 
-    ? getOptimizedImageUrl(src, {
-        width: fill ? undefined : width,
-        height: fill ? undefined : height,
-        quality,
-        crop,
-        format: "auto",
-        // Add performance optimizations
-        fetch_format: "auto",
-        flags: "progressive",
-        transformation: "f_auto,q_auto,fl_progressive"
-      })
-    : src
-
-  // Generate blur placeholder for Cloudinary images
-  const generateBlurDataURL = (url: string) => {
-    if (!isCloudinaryUrl || isDataUrl) return blurDataURL
-    
-    // Create a very low quality, small version for blur placeholder
-    const blurUrl = getOptimizedImageUrl(url, {
-      width: 20,
-      height: 20,
-      quality: 1,
-      crop: "fill",
-      format: "auto",
-      flags: "progressive"
-    })
-    
-    return blurUrl
-  }
+  // Disable all Cloudinary transformations; use raw src directly
+  const optimizedSrc = src
 
   const handleLoad = () => {
     setIsLoading(false)
@@ -101,41 +68,7 @@ export const CloudinaryImage = memo(function CloudinaryImage({
     )
   }
 
-  // For data URLs, use regular img tag instead of Next.js Image
-  if (isDataUrl) {
-    return (
-      <div className={cn("relative", className)}>
-        <img
-          src={src}
-          alt={alt}
-          width={fill ? undefined : width}
-          height={fill ? undefined : height}
-          className={cn(
-            "transition-opacity duration-300 object-cover",
-            isLoading ? "opacity-0" : "opacity-100",
-            fill ? "w-full h-full" : "",
-            className
-          )}
-          style={fill ? { width: '100%', height: '100%' } : { width, height }}
-          onLoad={handleLoad}
-          onError={handleError}
-          loading={priority ? "eager" : "lazy"}
-        />
-        
-        {isLoading && (
-          <div 
-            className={cn(
-              "absolute inset-0 flex items-center justify-center bg-slate-100 animate-pulse",
-              fill ? "w-full h-full" : ""
-            )}
-            style={!fill ? { width, height } : undefined}
-          >
-            <div className="text-slate-400">Loading...</div>
-          </div>
-        )}
-      </div>
-    )
-  }
+  // Always use Next/Image (works with data: and http/https when unoptimized)
 
   return (
     <div className={cn("relative", className)}>
@@ -147,8 +80,11 @@ export const CloudinaryImage = memo(function CloudinaryImage({
         fill={fill}
         sizes={sizes}
         priority={priority}
-        placeholder={placeholder}
-        blurDataURL={blurDataURL || (placeholder === "blur" ? generateBlurDataURL(src) : undefined)}
+        // Disable Next.js image processing
+        unoptimized
+        // Remove blur processing by default unless a blurDataURL is explicitly provided
+        placeholder={blurDataURL ? "blur" : "empty"}
+        blurDataURL={blurDataURL}
         onLoad={handleLoad}
         onError={handleError}
         className={cn(

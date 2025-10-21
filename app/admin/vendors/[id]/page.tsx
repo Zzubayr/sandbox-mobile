@@ -1,60 +1,35 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { isAdmin } from "@/lib/admin-utils"
 import { VendorDetailPage } from "@/components/admin/vendor-detail-page"
+import { requireAdmin } from "@/lib/auth/session"
+import { connectToDatabase } from "@/lib/db/connection"
+import Vendor from "@/lib/db/models/vendor"
+import Product from "@/lib/db/models/product"
+import Request from "@/lib/db/models/request"
 
 export default async function AdminVendorDetailPage({
   params,
 }: {
   params: { id: string }
 }) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  
-  if (error || !user) {
-    redirect("/auth/login")
+  try {
+    await requireAdmin()
+  } catch {
+    redirect('/auth/login?next=/admin/vendors')
   }
 
-  // Check if user is admin
-  const userIsAdmin = await isAdmin(user.id)
-  if (!userIsAdmin) {
-    redirect("/dashboard")
-  }
+  await connectToDatabase()
+  const vendorDoc = await Vendor.findById(params.id).lean()
+  if (!vendorDoc) redirect('/admin/vendors')
 
-  // Get vendor details
-  const { data: vendor, error: vendorError } = await supabase
-    .from('vendors')
-    .select('*')
-    .eq('id', params.id)
-    .single()
+  const [productsDocs, requestsDocs] = await Promise.all([
+    Product.find({ vendor_id: vendorDoc._id }).sort({ created_at: -1 }).lean(),
+    Request.find({ vendor_id: vendorDoc._id }).sort({ created_at: -1 }).lean(),
+  ])
 
-  if (vendorError || !vendor) {
-    redirect("/admin/vendors")
-  }
+  const shape = (d: any) => ({ ...d, id: d?._id?.toString(), _id: undefined })
+  const vendor = shape(vendorDoc)
+  const products = productsDocs.map(shape)
+  const requests = requestsDocs.map(shape)
 
-  // Get vendor's products
-  const { data: products } = await supabase
-    .from('products')
-    .select('*')
-    .eq('vendor_id', params.id)
-    .order('created_at', { ascending: false })
-
-  // Get vendor's requests
-  const { data: requests } = await supabase
-    .from('requests')
-    .select('*')
-    .eq('vendor_id', params.id)
-    .order('created_at', { ascending: false })
-
-  return (
-    <VendorDetailPage 
-      vendor={vendor} 
-      products={products || []} 
-      requests={requests || []} 
-    />
-  )
+  return <VendorDetailPage vendor={vendor as any} products={products as any} requests={requests as any} />
 }

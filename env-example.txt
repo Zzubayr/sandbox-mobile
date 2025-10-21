@@ -1,7 +1,10 @@
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+t# Authentication (Better Auth) and Database (MongoDB)
+MONGODB_URI=mongodb+srv://USER:PASS@CLUSTER_HOST/sandbox?retryWrites=true&w=majority
+BETTER_AUTH_SECRET=your_long_random_secret
+BETTER_AUTH_URL=http://localhost:3000
+# Optional social providers
+# GOOGLE_CLIENT_ID=
+# GOOGLE_CLIENT_SECRET=
 
 # Site Configuration
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
@@ -13,9 +16,18 @@ CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
+
+# Mapbox (for onboarding location picker)
+NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token
 
 # Optional: Analytics (if you want to use Vercel Analytics)
 # NEXT_PUBLIC_VERCEL_ANALYTICS_ID=your_analytics_id
 
 # Optional: Additional configuration
 # NODE_ENV=development
+
+# Legacy (Supabase) — no longer used after migration
+# NEXT_PUBLIC_SUPABASE_URL=
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# SUPABASE_SERVICE_ROLE_KEY=

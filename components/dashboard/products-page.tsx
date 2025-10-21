@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +11,7 @@ import { useTheme } from "@/lib/theme-context"
 import { Plus, Edit, Trash2, Package, Search, Filter, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { toImageUrl } from "@/lib/image-utils"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { ProductGridSkeleton } from "@/components/ui/loading-skeletons"
 import { CategoryManager } from "@/components/dashboard/category-manager"
@@ -48,43 +48,20 @@ export default function ProductsPage() {
 
   const loadData = async () => {
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const vendRes = await fetch('/api/dashboard/me/vendor', { cache: 'no-store' })
+      if (!vendRes.ok) return
+      const vendJson = await vendRes.json()
+      if (!vendJson.vendor) return
+      setVendor(vendJson.vendor)
 
-      // Get vendor info
-      const { data: vendorData } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (!vendorData) return
-
-      setVendor(vendorData)
-
-      // Get products and categories
-      const [
-        { data: productsData },
-        { data: categoriesData }
-      ] = await Promise.all([
-        supabase
-          .from("products")
-          .select(`
-            *,
-            category:categories (name)
-          `)
-          .eq("vendor_id", vendorData.id)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("categories")
-          .select("*")
-          .eq("vendor_id", vendorData.id)
-          .order("name")
+      const [prodRes, catRes] = await Promise.all([
+        fetch('/api/dashboard/products', { cache: 'no-store' }),
+        fetch('/api/dashboard/categories', { cache: 'no-store' })
       ])
-
-      setProducts(productsData || [])
-      setCategories(categoriesData || [])
+      const prodJson = prodRes.ok ? await prodRes.json() : { products: [] }
+      const catJson = catRes.ok ? await catRes.json() : { categories: [] }
+      setProducts(prodJson.products || [])
+      setCategories(catJson.categories || [])
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -97,14 +74,8 @@ export default function ProductsPage() {
 
     setActionLoading(true)
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productId)
-        .eq("vendor_id", vendor.id)
-
-      if (error) throw error
+      const resp = await fetch(`/api/dashboard/products/${productId}`, { method: 'DELETE' })
+      if (!resp.ok) throw new Error('Failed')
 
       setProducts(products.filter(p => p.id !== productId))
       setDeleteDialog({ open: false, productId: null, productTitle: "" })
@@ -126,13 +97,12 @@ export default function ProductsPage() {
     
     setActionLoading(true)
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("products")
-        .update({ status: newStatus })
-        .eq("id", productId)
-
-      if (error) throw error
+      const resp = await fetch(`/api/dashboard/products/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (!resp.ok) throw new Error('Failed')
 
       setProducts(products.map(p => 
         p.id === productId ? { ...p, status: newStatus as any } : p
@@ -262,12 +232,15 @@ export default function ProductsPage() {
             <Card key={product.id} className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow">
               <div className="aspect-square relative bg-gradient-to-br from-slate-50 to-slate-100">
                 {product.images && product.images.length > 0 ? (
-                  <Image
-                    src={product.images[0]}
-                    alt={product.title}
-                    fill
-                    className="object-cover"
-                  />
+                  (() => {
+                    const cover = toImageUrl(product.images[0] as any)
+                    const isData = cover.startsWith('data:') || cover.startsWith('blob:')
+                    return isData ? (
+                      <img src={cover} alt={product.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Image src={cover} alt={product.title} fill className="object-cover" />
+                    )
+                  })()
                 ) : (
                   <div className="flex items-center justify-center h-full text-slate-400">
                     <Package className="h-12 w-12" />
@@ -365,9 +338,11 @@ export default function ProductsPage() {
                                 <span className="text-sm font-normal text-slate-500 ml-1">/ {unitLabel}</span>
                               )}
                             </p>
-                            <p className="text-sm text-slate-500">
-                              Stock: {product.stock} {stockUnitLabel}
-                            </p>
+                            {product.stock > 0 && product.stock < 5 && (
+                              <p className="text-sm text-amber-700">
+                                Low stock: {product.stock} {stockUnitLabel}
+                              </p>
+                            )}
                           </>
                         )
                       })()}

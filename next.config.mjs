@@ -7,13 +7,15 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['res.cloudinary.com', 'picsum.photos'],
-    formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
+    // Disable all Next.js image optimization/processing for instant loads
+    unoptimized: true,
+    // Allow common remote sources used across the app
+    remotePatterns: [
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: 'picsum.photos' },
+    ],
+    // Keep SVG allowance since UI may render SVGs
     dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
@@ -33,7 +35,17 @@ const nextConfig = {
         net: false,
         tls: false,
       },
+      alias: {
+        ...(config.resolve?.alias || {}),
+        // Prevent optional native bindings from being bundled
+        'mongodb-client-encryption': false,
+        '@mongodb-js/zstd': false,
+        snappy: false,
+        kerberos: false,
+      },
     }
+    // Also mark native module as external to avoid resolution
+    config.externals = [...(config.externals || []), 'mongodb-client-encryption']
     return config
   },
 }

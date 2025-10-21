@@ -1,7 +1,6 @@
-import { updateSession } from "@/lib/supabase/middleware"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { get } from "@vercel/edge-config"
+// Edge Config is optional. Only load if configured to avoid runtime errors.
 
 export async function middleware(request: NextRequest) {
   // Skip maintenance check for the maintenance page itself and static assets
@@ -11,28 +10,22 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/api") ||
     request.nextUrl.pathname.includes(".")
   ) {
-    // For auth-protected routes, still run auth middleware even during maintenance
-    if (request.nextUrl.pathname.match(/^\/(admin|dashboard|onboarding|auth)/)) {
-      return await updateSession(request)
-    }
     return NextResponse.next()
   }
 
   try {
-    // Check if maintenance mode is enabled
-    const isMaintenanceMode = await get("isMaintenanceMode")
-
-    if (isMaintenanceMode) {
-      // Rewrite to maintenance page
-      return NextResponse.rewrite(new URL("/maintenance", request.url))
+    // Only attempt Edge Config if a connection string is provided at build time
+    if (process.env.EDGE_CONFIG) {
+      const { get } = await import("@vercel/edge-config")
+      const isMaintenanceMode = await get("isMaintenanceMode")
+      if (isMaintenanceMode) {
+        // Rewrite to maintenance page
+        return NextResponse.rewrite(new URL("/maintenance", request.url))
+      }
     }
   } catch (error) {
     // If Edge Config fails, continue normally
     console.error("Edge Config error:", error)
-  }
-
-  if (request.nextUrl.pathname.match(/^\/(admin|dashboard|onboarding|auth)/)) {
-    return await updateSession(request)
   }
 
   return NextResponse.next()

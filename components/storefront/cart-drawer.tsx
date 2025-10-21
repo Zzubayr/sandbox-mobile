@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react"
 import Image from "next/image"
+import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
 import { useCart } from "@/lib/cart-context"
 import type { Vendor } from "@/lib/types"
+import { useCartDrawerStore } from "@/lib/cart-drawer-store"
 import { getThemeColors } from "@/lib/theme-colors"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
@@ -18,7 +20,7 @@ interface CartDrawerProps {
 
 export function CartDrawer({ vendor }: CartDrawerProps) {
   const { state, dispatch } = useCart()
-  const [isOpen, setIsOpen] = useState(false)
+  const { isOpen, open, close } = useCartDrawerStore()
   const [removeDialog, setRemoveDialog] = useState<{ open: boolean; productId: string | null; productTitle: string }>({
     open: false,
     productId: null,
@@ -40,7 +42,7 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+    <Sheet open={isOpen} onOpenChange={(o) => (o ? open() : close())}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
@@ -77,7 +79,7 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">Your cart is empty</h3>
                 <p className="text-slate-500 mb-6">Add some products to get started</p>
                 <Button 
-                  onClick={() => setIsOpen(false)} 
+                  onClick={() => close()} 
                   className="bg-slate-900 hover:bg-slate-800 text-white"
                 >
                   Continue Shopping
@@ -93,7 +95,7 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
                       <div className="w-16 h-16 relative bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                         {item.product.images && item.product.images.length > 0 ? (
                           <Image
-                            src={item.product.images[0] || "/placeholder.svg"}
+                            src={toImageUrl(item.product.images[0] as any) || "/placeholder.svg"}
                             alt={item.product.title}
                             fill
                             className="object-cover"
@@ -159,7 +161,7 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
                 <Button
                   className="w-full h-12 text-base font-medium bg-slate-900 hover:bg-slate-800 text-white"
                   asChild
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => close()}
                 >
                   <Link href={`/store/${vendor.store_slug}/checkout`}>
                     Proceed to Checkout

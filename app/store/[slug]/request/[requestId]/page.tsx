@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Button } from "@/components/ui/button"
@@ -43,51 +42,21 @@ export default function CustomerRequestPage() {
     async function fetchData() {
       if (!requestId) return
 
-      const supabase = createClient()
-
       try {
-        // Get vendor
-        const { data: vendorData, error: vendorError } = await supabase
-          .from("vendors")
-          .select("*")
-          .eq("store_slug", slug)
-          .eq("is_active", true)
-          .single()
-
-        if (vendorError || !vendorData) {
+        const res = await fetch(`/api/store/${slug}/request/${requestId}`, { cache: 'no-store' })
+        if (!res.ok) {
           setLoading(false)
           return
         }
-
-        // Get request with items
-        const { data: requestData, error: requestError } = await supabase
-          .from("requests")
-          .select(`
-            *,
-            request_items (
-              *,
-              product:products (title, price, images, attributes)
-            )
-          `)
-          .eq("id", requestId)
-          .eq("vendor_id", vendorData.id)
-          .single()
-
-        if (requestError || !requestData) {
+        const { vendor, request } = await res.json()
+        if (vendor?.approval_status !== 'approved') {
+          setVendor(vendor)
+          setRequest(null)
           setLoading(false)
           return
         }
-
-        // Check if store is approved
-        if (vendorData.approval_status !== 'approved') {
-          setVendor(vendorData)
-          setRequest(null) // Don't set request for unapproved stores
-          setLoading(false)
-          return
-        }
-
-        setVendor(vendorData)
-        setRequest(requestData)
+        setVendor(vendor)
+        setRequest(request)
       } catch (error) {
         console.error("Error fetching request:", error)
       } finally {

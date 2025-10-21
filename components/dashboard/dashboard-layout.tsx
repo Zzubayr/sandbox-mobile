@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Sidebar } from "@/components/dashboard/sidebar"
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar"
 import { Header } from "@/components/dashboard/header"

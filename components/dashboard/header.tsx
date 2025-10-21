@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { authClient } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,12 +36,18 @@ interface HeaderProps {
 
 export function Header({ title, userEmail, mobileSidebar }: HeaderProps) {
   const router = useRouter();
-  const supabase = createClient();
   const { openSearch } = useSpotlightSearch();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/auth/login");
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => router.push('/auth/login'),
+        },
+      })
+    } catch {
+      router.push('/auth/login')
+    }
   };
 
   const handleSearchClick = () => {

@@ -1,24 +1,17 @@
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import AnalyticsPage from "@/components/dashboard/analytics-page"
+import { requireUser } from "@/lib/auth/session"
+import { connectToDatabase } from "@/lib/db/connection"
+import Vendor from "@/lib/db/models/vendor"
 
 export default async function AnalyticsPageWrapper() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  if (error || !user) {
-    redirect("/auth/login")
+  try {
+    const { user } = await requireUser()
+    await connectToDatabase()
+    const vendor = await Vendor.findOne({ user_id: user.id }).lean()
+    if (!vendor) redirect('/onboarding')
+    return <AnalyticsPage />
+  } catch {
+    redirect('/auth/login?next=/dashboard/analytics')
   }
-
-  // Get vendor info
-  const { data: vendor } = await supabase.from("vendors").select("*").eq("user_id", user.id).single()
-
-  if (!vendor) {
-    redirect("/auth/login")
-  }
-
-  return <AnalyticsPage />
 }

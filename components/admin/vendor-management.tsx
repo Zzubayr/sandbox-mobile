@@ -70,26 +70,27 @@ export function VendorManagement({ initialVendors = [] }: VendorManagementProps)
     vendor: null
   })
   const [adminNotes, setAdminNotes] = useState("")
+  const [rowBusyId, setRowBusyId] = useState<string | null>(null)
+
+  const refreshVendors = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/admin/vendors', { cache: 'no-store' })
+      if (response.ok) {
+        const data = await response.json()
+        setVendors(data.vendors || [])
+      }
+    } catch (error) {
+      console.error('Error fetching vendors:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Fetch vendors on component mount
   useEffect(() => {
-    const fetchVendors = async () => {
-      setLoading(true)
-      try {
-        const response = await fetch('/api/admin/vendors')
-        if (response.ok) {
-          const data = await response.json()
-          setVendors(data.vendors || [])
-        }
-      } catch (error) {
-        console.error('Error fetching vendors:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     if (initialVendors.length === 0) {
-      fetchVendors()
+      refreshVendors()
     }
   }, [initialVendors.length])
 
@@ -166,6 +167,42 @@ export function VendorManagement({ initialVendors = [] }: VendorManagementProps)
       })
       setAdminNotes("")
     }
+  }
+
+  // Quick inline actions (no dialog for approve/reject)
+  const quickApprove = async (vendor: Vendor) => {
+    setRowBusyId(vendor.id)
+    try {
+      const success = await approveVendor(vendor.id)
+      if (success) {
+        toastHelpers.success("Vendor Approved", "Vendor has been approved successfully")
+        setVendors(prev => prev.map(v => v.id === vendor.id ? { ...v, approval_status: 'approved', approved_at: new Date().toISOString() } : v))
+      } else {
+        toastHelpers.error("Approve Failed", "Could not approve vendor")
+      }
+    } finally {
+      setRowBusyId(null)
+    }
+  }
+
+  const quickReject = async (vendor: Vendor) => {
+    setRowBusyId(vendor.id)
+    try {
+      const success = await rejectVendor(vendor.id)
+      if (success) {
+        toastHelpers.success("Vendor Rejected", "Vendor has been rejected")
+        setVendors(prev => prev.map(v => v.id === vendor.id ? { ...v, approval_status: 'rejected', approved_at: new Date().toISOString() } : v))
+      } else {
+        toastHelpers.error("Reject Failed", "Could not reject vendor")
+      }
+    } finally {
+      setRowBusyId(null)
+    }
+  }
+
+  const promptDelete = (vendor: Vendor) => {
+    setActionDialog({ isOpen: true, action: 'delete', vendor })
+    setAdminNotes("")
   }
 
   const getStatusIcon = (status: string) => {
@@ -256,8 +293,11 @@ export function VendorManagement({ initialVendors = [] }: VendorManagementProps)
 
       {/* Vendors Table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between">
           <CardTitle>Vendors</CardTitle>
+          <Button onClick={refreshVendors} disabled={loading} variant="outline">
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -309,60 +349,35 @@ export function VendorManagement({ initialVendors = [] }: VendorManagementProps)
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/vendors/${vendor.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        {vendor.approval_status !== 'approved' && (
-                          <DropdownMenuItem 
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAction('approve', vendor)
-                            }}
-                            className="text-green-600 cursor-pointer"
-                          >
-                            <Check className="mr-2 h-4 w-4" />
-                            Approve
-                          </DropdownMenuItem>
-                        )}
-                        {vendor.approval_status !== 'rejected' && (
-                          <DropdownMenuItem 
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAction('reject', vendor)
-                            }}
-                            className="text-red-600 cursor-pointer"
-                          >
-                            <X className="mr-2 h-4 w-4" />
-                            Reject
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleAction('delete', vendor)
-                          }}
-                          className="text-red-600 cursor-pointer"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <TableCell className="text-right space-x-2">
+                    {vendor.approval_status !== 'approved' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); quickApprove(vendor) }}
+                        disabled={rowBusyId === vendor.id || loading}
+                      >
+                        <Check className="h-4 w-4 mr-1" /> Approve
+                      </Button>
+                    )}
+                    {vendor.approval_status !== 'rejected' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); quickReject(vendor) }}
+                        disabled={rowBusyId === vendor.id || loading}
+                      >
+                        <X className="h-4 w-4 mr-1" /> Reject
+                      </Button>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); promptDelete(vendor) }}
+                      disabled={rowBusyId === vendor.id || loading}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

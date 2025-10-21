@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Heart, ShoppingCart, Package, Trash2, Plus } from "lucide-react"
 import Image from "next/image"
+import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
 import { useWishlist } from "@/lib/wishlist-context"
 import { useCart } from "@/lib/cart-context"
@@ -105,7 +106,7 @@ export function WishlistDrawer({ vendor }: WishlistDrawerProps) {
                       <div className="w-12 h-12 sm:w-16 sm:h-16 relative bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                         {product.images && product.images.length > 0 ? (
                           <Image
-                            src={product.images[0] || "/placeholder.svg"}
+                            src={toImageUrl(product.images[0] as any) || "/placeholder.svg"}
                             alt={product.title}
                             fill
                             className="object-cover"

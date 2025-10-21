@@ -6,7 +6,7 @@ import { useTheme } from "@/lib/theme-context"
 import { Home, Package, ShoppingCart, Settings, BarChart3, HelpCircle, LogOut, Store, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { authClient } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import logo from "@/public/logo.svg"
 import Image from "next/image"
@@ -47,12 +47,18 @@ interface SidebarProps {
 export function Sidebar({ className, storeName }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createClient()
   const { colors } = useTheme()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/auth/login")
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => router.push('/auth/login'),
+        },
+      })
+    } catch {
+      router.push('/auth/login')
+    }
   }
 
   return (

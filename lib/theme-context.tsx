@@ -1,7 +1,6 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { applyThemeToDocument, getThemeColors } from '@/lib/theme-colors'
 
 type Theme = "blue" | "green" | "purple"
@@ -18,7 +17,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("blue")
   const [isLoading, setIsLoading] = useState(true)
-  const supabase = createClient()
+  
 
   const colors = getThemeColors(theme)
 
@@ -36,21 +35,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Save theme to user's vendor profile only on protected routes
     if (isProtectedRoute()) {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: vendor } = await supabase
-            .from('vendors')
-            .select('id')
-            .eq('user_id', user.id)
-            .single()
-          
-          if (vendor) {
-            await supabase
-              .from('vendors')
-              .update({ theme_color: newTheme })
-              .eq('id', vendor.id)
-          }
-        }
+        await fetch('/api/dashboard/vendor', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme_color: newTheme })
+        })
       } catch (error) {
         console.error('Error saving theme:', error)
       }
@@ -61,14 +50,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const loadUserTheme = async () => {
       try {
         if (!isProtectedRoute()) return
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: vendor } = await supabase
-            .from('vendors')
-            .select('theme_color')
-            .eq('user_id', user.id)
-            .single()
-          
+        const res = await fetch('/api/dashboard/vendor', { cache: 'no-store' })
+        if (res.ok) {
+          const json = await res.json()
+          const vendor = json.vendor
           if (vendor?.theme_color) {
             setThemeState(vendor.theme_color as Theme)
             applyThemeToDocument(vendor.theme_color as Theme)

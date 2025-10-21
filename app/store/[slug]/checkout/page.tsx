@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Button } from "@/components/ui/button"
@@ -38,29 +37,18 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     async function fetchVendor() {
-      const supabase = createClient()
-
-      const { data: vendorData, error } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("store_slug", slug)
-        .eq("is_active", true)
-        .single()
-
-      if (error || !vendorData) {
-        router.push("/")
-        return
-      }
-
-      // Check if store is approved
-      if (vendorData.approval_status !== 'approved') {
-        setVendor(vendorData)
+      try {
+        const res = await fetch(`/api/store/${slug}/vendor`, { cache: 'no-store' })
+        if (!res.ok) {
+          router.push('/')
+          return
+        }
+        const { vendor } = await res.json()
+        setVendor(vendor)
         setLoading(false)
-        return
+      } catch {
+        router.push('/')
       }
-
-      setVendor(vendorData)
-      setLoading(false)
     }
 
     fetchVendor()
@@ -80,44 +68,25 @@ export default function CheckoutPage() {
     setSubmitting(true)
 
     try {
-      const supabase = createClient()
-
-      // Create the request
-      const { data: request, error: requestError } = await supabase
-        .from("requests")
-        .insert({
-          vendor_id: vendor.id,
-          customer_name: formData.customerName,
-          customer_phone: formData.customerPhone,
-          customer_note: formData.customerNote || null,
-          total_amount: state.total,
-          status: "pending",
-        })
-        .select()
-        .single()
-
-      if (requestError) throw requestError
-
-      // Create request items
-      const requestItems = state.items.map((item: { product: any; quantity: number }) => ({
-        request_id: request.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        price: item.product.price,
-      }))
-
-      const { error: itemsError } = await supabase.from("request_items").insert(requestItems)
-
-      if (itemsError) throw itemsError
-
-      // Show success toast
+      const payload = {
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        customerNote: formData.customerNote || undefined,
+        items: state.items.map((it: { product: any; quantity: number }) => ({
+          productId: it.product.id,
+          quantity: it.quantity,
+        })),
+      }
+      const res = await fetch(`/api/store/${slug}/requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('Failed to create request')
+      const { requestId } = await res.json()
       toastHelpers.requestSubmitted()
-
-      // Clear cart only after successful request creation
       dispatch.clearCart()
-
-      // Redirect to success page
-      router.push(`/store/${slug}/request-success?requestId=${request.id}`)
+      router.push(`/store/${slug}/request-success?requestId=${requestId}`)
     } catch (error) {
       console.error("Error creating request:", error)
       toastHelpers.error("Request Failed", "Failed to create request. Please try again.")
@@ -184,7 +153,7 @@ export default function CheckoutPage() {
                     <div className="w-12 h-12 md:w-16 md:h-16 relative bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                       {item.product.images && item.product.images.length > 0 ? (
                         <Image
-                          src={item.product.images[0] || "/placeholder.svg"}
+                          src={(typeof item.product.images[0] === 'string' ? (item.product.images[0] as string) : (item.product.images[0] as any)?.url) || "/placeholder.svg"}
                           alt={item.product.title}
                           fill
                           className="object-cover"

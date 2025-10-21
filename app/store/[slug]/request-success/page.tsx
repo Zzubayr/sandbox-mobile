@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Button } from "@/components/ui/button"
@@ -29,51 +28,25 @@ export default function RequestSuccessPage() {
     async function fetchData() {
       if (!requestId) return
 
-      const supabase = createClient()
-
-      // Get vendor
-      const { data: vendorData, error: vendorError } = await supabase
-        .from("vendors")
-        .select("*")
-        .eq("store_slug", slug)
-        .eq("is_active", true)
-        .single()
-
-      if (vendorError || !vendorData) {
+      try {
+        const res = await fetch(`/api/store/${slug}/request/${requestId}`, { cache: 'no-store' })
+        if (!res.ok) {
+          setLoading(false)
+          return
+        }
+        const { vendor, request } = await res.json()
+        if (vendor?.approval_status !== 'approved') {
+          setVendor(vendor)
+          setRequest(null)
+          setLoading(false)
+          return
+        }
+        setVendor(vendor)
+        setRequest(request)
         setLoading(false)
-        return
-      }
-
-      // Get request
-      const { data: requestData, error: requestError } = await supabase
-        .from("requests")
-        .select(`
-          *,
-          request_items (
-            *,
-            product:products (title)
-          )
-        `)
-        .eq("id", requestId)
-        .eq("vendor_id", vendorData.id)
-        .single()
-
-      if (requestError || !requestData) {
+      } catch {
         setLoading(false)
-        return
       }
-
-      // Check if store is approved
-      if (vendorData.approval_status !== 'approved') {
-        setVendor(vendorData)
-        setRequest(null) // Don't set request for unapproved stores
-        setLoading(false)
-        return
-      }
-
-      setVendor(vendorData)
-      setRequest(requestData)
-      setLoading(false)
     }
 
     fetchData()

@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Bell, User, LogOut, Menu } from "lucide-react"
 import {
@@ -22,11 +22,16 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ userEmail, onMenuClick }: AdminHeaderProps) {
   const router = useRouter()
-  const supabase = createClient()
-
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => router.push('/auth/login'),
+        },
+      })
+    } catch {
+      router.push('/auth/login')
+    }
   }
 
   return (

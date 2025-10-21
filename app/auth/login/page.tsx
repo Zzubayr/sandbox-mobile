@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createClient } from "@/lib/supabase/client"
+import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,64 +23,84 @@ export default function LoginPage() {
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const supabase = createClient()
-    setIsLoading(true)
-    setError(null)
-
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await authClient.signIn.email({
         email,
         password,
-      })
-
-      if (error) throw error
-
-      toastHelpers.success("Login Successful", "Welcome back!")
-      
-      // Check if user is admin
-      const { data: admin } = await supabase
-        .from("admins")
-        .select("id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-        .single()
-
-      if (admin) {
-        router.push("/admin")
-      } else {
-      router.push("/dashboard")
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "An error occurred"
-      setError(errorMessage)
-      toastHelpers.error("Login Failed", errorMessage)
+        rememberMe: true,
+        callbackURL: "/auth/post-login",
+      });
+      if (error) throw error;
+      toastHelpers.success("Login Successful", "Welcome back!");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      toastHelpers.error("Login Failed", errorMessage);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleGoogleLogin = async () => {
-    const supabase = createClient()
-    setIsGoogleLoading(true)
-    setError(null)
+    // If offline, fail fast with a clear message.
+    if (typeof navigator !== "undefined" && navigator && navigator.onLine === false) {
+      const msg = "You appear to be offline. Please check your connection.";
+      setError(msg);
+      toastHelpers.networkError();
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    setError(null);
+
+    // Fallback: if the auth endpoint errors or does not redirect
+    // (e.g., backend 500), show a toast and re-enable the button.
+    const timeout = setTimeout(() => {
+      // If we're still loading after a few seconds, assume failure.
+      if (isGoogleLoading) {
+        const msg = "Google sign-in did not start. Please try again.";
+        setError(msg);
+        toastHelpers.error("Google Login Failed", msg);
+        setIsGoogleLoading(false);
+      }
+    }, 7000);
 
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${siteUrl}/auth/callback`
-        }
-      })
-
-      if (error) throw error
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Google login failed"
-      setError(errorMessage)
-      toastHelpers.error("Google Login Failed", errorMessage)
-      setIsGoogleLoading(false)
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/auth/post-login",
+        errorCallbackURL: "/auth/login",
+      });
+      // Normally this triggers a redirect; if it returns without redirecting
+      // and without throwing, clear the timeout and reset the button.
+      clearTimeout(timeout);
+      setIsGoogleLoading(false);
+    } catch (err: unknown) {
+      clearTimeout(timeout);
+      const errorMessage =
+        err instanceof Error ? err.message : "Google login failed";
+      setError(errorMessage);
+      // Provide a helpful message for common network/DB errors.
+      if (
+        typeof errorMessage === "string" &&
+        (errorMessage.toLowerCase().includes("network") ||
+          errorMessage.toLowerCase().includes("econnrefused") ||
+          errorMessage.toLowerCase().includes("mongodb"))
+      ) {
+        toastHelpers.error(
+          "Google Login Failed",
+          "A server connection error occurred. Please try again."
+        );
+      } else {
+        toastHelpers.error("Google Login Failed", errorMessage);
+      }
+      setIsGoogleLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
