@@ -177,34 +177,34 @@ export default function HomePage() {
             <source src="/umsq.mp4" type="video/mp4" />
           </video>
           {/* Subtle overlay to improve text readability */}
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
 
         {/* Content positioned at bottom left */}
         <div className="absolute bottom-0 left-0 z-10 w-full">
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pb-16 md:pb-10">
-            <div className="max-w-lg md:max-w-2xl">
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pb-24 md:pb-12">
+            <div className="max-w-2xl">
               <Reveal>
-                <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold leading-tight tracking-tight text-white mb-4 sm:mb-6 text-left">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight text-white mb-5 sm:mb-6 text-left">
                   Launch a premium storefront that looks sharp - and sells
                 </h1>
-                <p className="text-base sm:text-lg md:text-xl text-white max-w-xl mb-6 sm:mb-8 text-left">
+                <p className="text-lg sm:text-xl md:text-xl text-white/95 max-w-2xl mb-7 sm:mb-8 text-left">
                   Turn browsers into buyers with a fast, thoughtfully designed
                   store. Clean visuals, clear UX, and just the tools you need to
                   grow.
                 </p>
 
                 {/* Store Name Input */}
-                <div className="max-w-lg">
+                <div className="max-w-xl w-full">
                   <form onSubmit={handleStoreNameSubmit} className="relative">
-                    <div className="relative bg-white rounded-full px-4 sm:px-6 py-3 sm:py-4 shadow-lg border border-white/20">
+                    <div className="relative bg-white rounded-full px-5 sm:px-6 py-3.5 sm:py-4 shadow-xl ring-1 ring-white/30">
                       <div className="flex items-center gap-3 sm:gap-4">
                         {/* Store icon */}
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 sm:w-6 sm:h-6 bg-blue-600 rounded-sm flex items-center justify-center">
-                            <div className="w-2.5 h-2 sm:w-3 sm:h-2 bg-white rounded-sm"></div>
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 bg-blue-600 rounded-sm flex items-center justify-center">
+                            <div className="w-3 h-2.5 sm:w-3.5 sm:h-3 bg-white rounded-sm"></div>
                           </div>
-                          <span className="text-slate-600 text-sm sm:text-base font-medium">
+                          <span className="text-slate-700 text-base sm:text-lg font-medium">
                             My store
                           </span>
                         </div>
@@ -218,15 +218,15 @@ export default function HomePage() {
                           placeholder="Enter your store name"
                           value={storeName}
                           onChange={(e) => setStoreName(e.target.value)}
-                          className="flex-1 min-w-0 outline-none text-slate-900 placeholder-slate-500 text-sm sm:text-base"
+                          className="flex-1 min-w-0 outline-none text-slate-900 placeholder-slate-500 text-base sm:text-lg"
                         />
 
                         {/* Submit button */}
                         <button
                           type="submit"
-                          className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors"
+                          className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors"
                         >
-                          <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                          <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </button>
                       </div>
                     </div>
