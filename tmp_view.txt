@@ -1,0 +1,62 @@
+      toastHelpers.saveError("Failed to save settings. Please try again.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const copyStoreLink = async () => {
+    if (!vendor) return
+    const storeUrl = `${window.location.origin}/store/${vendor.store_slug}`
+    try {
+      await navigator.clipboard.writeText(storeUrl)
+      toastHelpers.storeLinkCopied()
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = storeUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      toastHelpers.storeLinkCopied()
+    }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center py-12">Loading...</div>
+  }
+
+  if (!vendor) {
+    return null
+  }
+            {saving ? "Saving..." : "Save Settings"}
+          </Button>
+        </div>
+
+        {/* Live Preview */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Live Preview</CardTitle>
+              <CardDescription>See how your store will look to customers</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden">
+                {/* Preview Header */}
+                <div className="border-b bg-background/95 p-4">
+                  <div className="flex items-center gap-3">
+                    {(formData.logo_url || pendingLogo.length > 0) ? (
+                      <img
+                        src={(pendingLogo[0]?.previewUrl || formData.logo_url || "/placeholder.svg") as string}
+                        alt={formData.store_name}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                        style={{ backgroundColor: selectedColors.primary }}
+                      >
+                        {formData.store_name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>

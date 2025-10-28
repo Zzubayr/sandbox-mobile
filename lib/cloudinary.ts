@@ -1,7 +1,7 @@
 // Client-side Cloudinary helpers
 
 // Legacy helper used by existing UI: uploads to local preview endpoint
-export async function uploadImage(file: File, folder: string = 'sandbox'): Promise<string> {
+export async function uploadImage(file: File, folder: string = 'ummah-square'): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('folder', folder)

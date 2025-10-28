@@ -8,9 +8,9 @@ import { SpotlightSearchProvider } from '@/components/providers/spotlight-search
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Sandbox - Multi-Vendor Marketplace',
+  title: 'Ummah Square - Multi-Vendor Marketplace',
   description: 'Create beautiful online catalogs for your business. Let customers browse and request products through WhatsApp.',
-  generator: 'Sandbox',
+  generator: 'Ummah Square',
 }
 
 export default function RootLayout({

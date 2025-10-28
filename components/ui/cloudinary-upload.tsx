@@ -24,7 +24,7 @@ export function CloudinaryUpload({
   onRemove,
   existingImages = [],
   maxImages = 5,
-  folder = 'sandbox',
+  folder = 'ummah-square',
   className = "",
   label = "Upload Images",
   description = "Upload high-quality images (JPG, PNG, WebP, GIF). Max 5MB per image."

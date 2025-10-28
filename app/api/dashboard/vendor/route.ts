@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
       business_type,
       description,
       whatsapp_number,
+      facebook,
+      instagram,
+      twitter,
+      linkedin,
+      whatsapp,
       theme_color,
       logo_url,
       banner_url,
@@ -73,6 +78,8 @@ export async function POST(request: NextRequest) {
       address,
       placeId,
       components,
+      business_categories,
+      business_subcategories,
     } = body || {};
 
     if (!store_name || !theme_color) {
@@ -103,6 +110,16 @@ export async function POST(request: NextRequest) {
     const baseSlug = slugify(store_slug || store_name);
     const uniqueSlug = await generateUniqueSlug(baseSlug);
 
+    // sanitize categories
+    const sanitizeStrArray = (val: any): string[] | undefined => {
+      if (!Array.isArray(val)) return undefined
+      const out = val
+        .filter((v) => typeof v === 'string')
+        .map((v) => v.trim())
+        .filter(Boolean)
+      return out.length ? Array.from(new Set(out)) : undefined
+    }
+
     const created = await Vendor.create({
       user_id: user.id,
       email: (user as any).email || undefined,
@@ -120,6 +137,14 @@ export async function POST(request: NextRequest) {
       address: typeof address === 'string' ? address : undefined,
       placeId: typeof placeId === 'string' ? placeId : undefined,
       components: components && typeof components === 'object' ? components : undefined,
+      // social links
+      facebook: typeof facebook === 'string' ? facebook : undefined,
+      instagram: typeof instagram === 'string' ? instagram : undefined,
+      twitter: typeof twitter === 'string' ? twitter : undefined,
+      linkedin: typeof linkedin === 'string' ? linkedin : undefined,
+      whatsapp: typeof whatsapp === 'string' ? whatsapp : undefined,
+      business_categories: sanitizeStrArray(business_categories ?? body?.categories),
+      business_subcategories: sanitizeStrArray(business_subcategories ?? body?.subcategories),
       is_active: true,
     });
     return NextResponse.json({ vendor: shapeId(created.toJSON()) });
@@ -140,19 +165,46 @@ export async function PATCH(request: NextRequest) {
     await connectToDatabase();
     const body = await request.json();
     const update: any = {};
+    const optionalTextFields = ['description', 'facebook', 'instagram', 'twitter', 'linkedin', 'whatsapp'];
     for (const key of [
       "store_name",
       "business_type",
       "description",
       "whatsapp_number",
+      "facebook",
+      "instagram",
+      "twitter",
+      "linkedin",
+      "whatsapp",
       "theme_color",
       "logo_url",
       "banner_url",
       "logo",
       "banner",
       "store_slug",
+      "facebook",
+      "instagram",
+      "twitter",
+      "linkedin",
+      "whatsapp",
     ]) {
-      if (key in body) update[key] = body[key] || (key === 'description' ? undefined : body[key]);
+      if (key in body) {
+        // For optional text fields, convert empty strings to undefined
+        if (optionalTextFields.includes(key)) {
+          update[key] = body[key] || undefined;
+        } else {
+          update[key] = body[key];
+        }
+      }
+    }
+    const normArr = (arr: any) => Array.isArray(arr) ? Array.from(new Set(arr.filter((v: any) => typeof v === 'string').map((s: string) => s.trim()).filter(Boolean))) : undefined
+    if ('business_categories' in body || 'categories' in body) {
+      const cat = normArr(body.business_categories ?? body.categories)
+      if (cat && cat.length) update.business_categories = cat; else if (Array.isArray(body.business_categories) || Array.isArray(body.categories)) update.business_categories = undefined
+    }
+    if ('business_subcategories' in body || 'subcategories' in body) {
+      const sub = normArr(body.business_subcategories ?? body.subcategories)
+      if (sub && sub.length) update.business_subcategories = sub; else if (Array.isArray(body.business_subcategories) || Array.isArray(body.subcategories)) update.business_subcategories = undefined
     }
     if ('business_type' in update && !['products','services'].includes(update.business_type)) {
       delete update.business_type;

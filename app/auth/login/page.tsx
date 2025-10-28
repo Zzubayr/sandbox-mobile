@@ -103,7 +103,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-[#EBF3FA] to-[#D6E7F5] flex items-center justify-center p-4">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] -z-10" />
       
@@ -115,7 +115,7 @@ export default function LoginPage() {
               <Image src={logo} className="" alt="logo"/>
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
-            Sandbox
+            Ummah Square
           </h1>
           <p className="text-slate-600">Welcome back to your vendor dashboard</p>
         </div>
@@ -142,7 +142,7 @@ export default function LoginPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-12 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
+                  className="pl-10 h-12 border-slate-200 focus:border-[#2B6DA9] focus:ring-[#2B6DA9]/20"
                     />
                   </div>
             </div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 h-12 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
+                  className="pl-10 pr-10 h-12 border-slate-200 focus:border-[#2B6DA9] focus:ring-[#2B6DA9]/20"
                 />
                 <button
                   type="button"
@@ -182,7 +182,7 @@ export default function LoginPage() {
             {/* Login Button */}
             <Button 
               type="submit" 
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl" 
+              className="w-full h-12 bg-gradient-to-r from-[#2B6DA9] to-[#20527F] hover:from-[#20527F] hover:to-[#183D5F] text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl" 
               disabled={isLoading}
             >
               {isLoading ? (
@@ -253,7 +253,7 @@ export default function LoginPage() {
               Don't have an account?{" "}
               <Link 
                 href="/auth/signup" 
-                className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                className="font-medium text-[#2B6DA9] hover:text-[#20527F] transition-colors"
               >
                 Create one here
               </Link>

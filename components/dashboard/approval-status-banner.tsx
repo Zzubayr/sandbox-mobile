@@ -35,7 +35,7 @@ export function ApprovalStatusBanner({ vendor }: ApprovalStatusBannerProps) {
       const timer = setTimeout(() => {
         localStorage.setItem(notificationKey, 'true')
         setIsDismissed(true)
-      }, 5000)
+      }, 20000)
       
       return () => clearTimeout(timer)
     }

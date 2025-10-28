@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar"
 import { Header } from "@/components/dashboard/header"
 import { ApprovalStatusBanner } from "@/components/dashboard/approval-status-banner"
+import DashboardTour from "@/components/dashboard/dashboard-tour"
 import { useTheme } from "@/lib/theme-context"
 import type { Vendor } from "@/lib/types"
 
@@ -30,7 +31,7 @@ export default function DashboardLayout({ children, userEmail, vendor }: Dashboa
   if (loading) {
     return (
       <div className="flex h-screen bg-background items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2B6DA9]"></div>
       </div>
     )
   }
@@ -51,11 +52,13 @@ export default function DashboardLayout({ children, userEmail, vendor }: Dashboa
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100">
           {/* Approval Status Banner */}
           {vendor && (
-            <div className="mb-6">
+            <div className="mb-6" data-tour="approval-banner">
               <ApprovalStatusBanner vendor={vendor} />
             </div>
           )}
           {children}
+          {/* Guided Tour overlay */}
+          <DashboardTour />
         </main>
       </div>
     </div>

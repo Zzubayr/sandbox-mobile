@@ -83,12 +83,12 @@
   --sidebar-ring: oklch(0.708 0 0);
   
   /* Theme variables - default to blue */
-  --theme-primary: rgb(37 99 235);
-  --theme-secondary: rgb(59 130 246);
-  --theme-accent: rgb(147 197 253);
-  --theme-light: rgb(239 246 255);
-  --theme-dark: rgb(30 64 175);
-  --theme-darker: rgb(29 78 216);
+  --theme-primary: rgb(43 109 169);
+  --theme-secondary: rgb(58 130 194);
+  --theme-accent: rgb(147 186 217);
+  --theme-light: rgb(235 243 250);
+  --theme-dark: rgb(32 82 127);
+  --theme-darker: rgb(24 61 95);
 }
 
 .dark {
@@ -245,12 +245,12 @@
 
   /* Theme-specific classes */
   .theme-blue {
-    --theme-primary: rgb(37 99 235);
-    --theme-secondary: rgb(59 130 246);
-    --theme-accent: rgb(147 197 253);
-    --theme-light: rgb(239 246 255);
-    --theme-dark: rgb(30 64 175);
-    --theme-darker: rgb(29 78 216);
+    --theme-primary: rgb(43 109 169);
+    --theme-secondary: rgb(58 130 194);
+    --theme-accent: rgb(147 186 217);
+    --theme-light: rgb(235 243 250);
+    --theme-dark: rgb(32 82 127);
+    --theme-darker: rgb(24 61 95);
   }
 
   .theme-green {
@@ -371,7 +371,7 @@
   }
 
   .orb-blue {
-    background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.25), rgba(37, 99, 235, 0) 65%);
+    background: radial-gradient(circle at 50% 50%, rgba(43, 109, 169, 0.25), rgba(43, 109, 169, 0) 65%);
   }
 
   @keyframes orbFloat {
@@ -388,9 +388,9 @@
 @layer utilities {
   .shape { position: absolute; opacity: 0.14; pointer-events: none; }
   .shape-blur { filter: blur(1.5px); }
-  .shape-circle { border-radius: 9999px; background: rgba(37,99,235,0.12); }
-  .shape-square { border-radius: 10px; background: rgba(37,99,235,0.09); border: 1px solid rgba(37,99,235,0.18); }
-  .shape-triangle { background: rgba(37,99,235,0.10); clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
+  .shape-circle { border-radius: 9999px; background: rgba(43,109,169,0.12); }
+  .shape-square { border-radius: 10px; background: rgba(43,109,169,0.09); border: 1px solid rgba(43,109,169,0.18); }
+  .shape-triangle { background: rgba(43,109,169,0.10); clip-path: polygon(50% 0%, 0% 100%, 100% 100%); }
 
   @keyframes drift1 {
     from { transform: translate3d(0, 0, 0) rotate(0deg); }

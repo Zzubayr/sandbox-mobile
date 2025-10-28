@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useTheme } from "@/lib/theme-context"
-import { Save, Copy, ExternalLink, Palette, Store, Phone, Check, Image as ImageIcon } from "lucide-react"
+import { Save, Copy, ExternalLink, Palette, Store, Phone, Check, Image as ImageIcon, Share2, Facebook, Instagram, Twitter, Linkedin } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import CloudinaryUploadDeferred, { type PendingFile } from "@/components/ui/cloudinary-upload-deferred"
@@ -19,6 +19,7 @@ import { uploadImageWithMeta, deleteImage as deleteCloudinaryImage, extractPubli
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
+import { getCategoryMap } from "@/lib/onboarding-categories"
 
 export default function SettingsPage() {
   const { setTheme } = useTheme()
@@ -36,7 +37,14 @@ export default function SettingsPage() {
     theme_color: "blue" as "blue" | "green" | "purple",
     logo_url: "",
     banner_url: "",
+    facebook: "",
+    instagram: "",
+    twitter: "",
+    linkedin: "",
+    whatsapp: "",
   })
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([])
 
   useEffect(() => {
     async function fetchVendor() {
@@ -59,7 +67,14 @@ export default function SettingsPage() {
         theme_color: vendorData.theme_color,
         logo_url: vendorData.logo_url || "",
         banner_url: vendorData.banner_url || "",
+        facebook: vendorData.facebook || "",
+        instagram: vendorData.instagram || "",
+        twitter: vendorData.twitter || "",
+        linkedin: vendorData.linkedin || "",
+        whatsapp: vendorData.whatsapp || "",
       })
+      setSelectedCategories(Array.isArray(vendorData.business_categories) ? vendorData.business_categories : [])
+      setSelectedSubcategories(Array.isArray(vendorData.business_subcategories) ? vendorData.business_subcategories : [])
       // Track previous Cloudinary public IDs for cleanup on save
       setPrevLogoId(vendorData.logo?.public_id || extractPublicId(vendorData.logo_url || ""))
       setPrevBannerId(vendorData.banner?.public_id || extractPublicId(vendorData.banner_url || ""))
@@ -103,6 +118,13 @@ export default function SettingsPage() {
           banner_url: updates.banner_url ?? (formData.banner_url || undefined),
           logo: updates.logo,
           banner: updates.banner,
+          business_categories: selectedCategories,
+          business_subcategories: selectedSubcategories,
+          facebook: formData.facebook || undefined,
+          instagram: formData.instagram || undefined,
+          twitter: formData.twitter || undefined,
+          linkedin: formData.linkedin || undefined,
+          whatsapp: formData.whatsapp || undefined,
         })
       })
       if (!res.ok) throw new Error('Failed to save')
@@ -118,6 +140,11 @@ export default function SettingsPage() {
           theme_color: savedVendor.theme_color,
           logo_url: savedVendor.logo_url || "",
           banner_url: savedVendor.banner_url || "",
+          facebook: savedVendor.facebook || "",
+          instagram: savedVendor.instagram || "",
+          twitter: savedVendor.twitter || "",
+          linkedin: savedVendor.linkedin || "",
+          whatsapp: savedVendor.whatsapp || "",
         })
       } else {
         const nextVendor = { ...vendor, ...formData, ...updates }
@@ -185,20 +212,21 @@ export default function SettingsPage() {
 
   const storeUrl = `${window.location.origin}/store/${vendor.store_slug}`
   const selectedColors = getThemeColors(formData.theme_color)
+  const categoryMap = getCategoryMap((vendor?.business_type as ('products'|'services')) || 'products')
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Store Settings</h1>
-          <p className="text-muted-foreground">Customize your store appearance and information</p>
+          <h1 className="text-3xl font-bold tracking-tight">Store Settings</h1>
+          <p className="text-muted-foreground mt-1">Customize your store appearance and information</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={copyStoreLink}>
+          <Button variant="outline" onClick={copyStoreLink} className="flex-1 md:flex-none">
             <Copy className="mr-2 h-4 w-4" />
             Copy Store Link
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="flex-1 md:flex-none">
             <Link href={storeUrl} target="_blank">
               <ExternalLink className="mr-2 h-4 w-4" />
               Preview Store
@@ -207,13 +235,13 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Settings Form */}
-        <div className="space-y-6">
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Store className="w-5 h-5 text-blue-600" />
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Store className="w-5 h-5" style={{ color: selectedColors.primary }} />
                 Basic Information
               </CardTitle>
               <CardDescription>Update your store's basic details</CardDescription>
@@ -261,10 +289,10 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="w-5 h-5 text-purple-600" />
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Palette className="w-5 h-5" style={{ color: selectedColors.primary }} />
                 Theme & Branding
               </CardTitle>
               <CardDescription>Customize your store's appearance</CardDescription>
@@ -289,11 +317,15 @@ export default function SettingsPage() {
                           setFormData({ ...formData, theme_color: theme.value })
                           setTheme(theme.value)
                         }}
-                        className={`p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                        className={`p-4 rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
                           formData.theme_color === theme.value 
-                            ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg" 
-                            : "border-slate-200 hover:border-slate-300 bg-white hover:shadow-md"
+                            ? "shadow-md" 
+                            : "border-slate-200 hover:border-slate-300 bg-white"
                         }`}
+                        style={formData.theme_color === theme.value ? {
+                          borderColor: colors.primary,
+                          background: `linear-gradient(to bottom right, ${colors.light}, white)`
+                        } : {}}
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex gap-1">
@@ -307,10 +339,10 @@ export default function SettingsPage() {
                           </div>
                           {formData.theme_color === theme.value && (
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: colors.primary }}>
                                 <Check className="w-4 h-4 text-white" />
                               </div>
-                              <Badge className="bg-blue-500 text-white">
+                              <Badge className="text-white" style={{ backgroundColor: colors.primary }}>
                                 Active
                               </Badge>
                             </div>
@@ -330,7 +362,7 @@ export default function SettingsPage() {
                     <ImageIcon className="w-4 h-4" />
                     Store Logo
                   </Label>
-                    {(formData.logo_url || pendingLogo.length > 0) ? (
+                  {(formData.logo_url || pendingLogo.length > 0) ? (
                     <div className="space-y-3">
                       <div className="w-24 h-24 relative border-2 border-slate-200 rounded-lg overflow-hidden">
                         <Image
@@ -402,22 +434,165 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Share2 className="w-5 h-5" style={{ color: selectedColors.primary }} />
+                Social Media Links
+              </CardTitle>
+              <CardDescription>Connect your social media profiles to display on your storefront</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Label htmlFor="facebook" className="text-sm font-medium flex items-center gap-2">
+                  <Facebook className="w-4 h-4 text-blue-600" />
+                  Facebook
+                </Label>
+                <Input
+                  id="facebook"
+                  placeholder="https://facebook.com/yourpage"
+                  value={formData.facebook}
+                  onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="instagram" className="text-sm font-medium flex items-center gap-2">
+                  <Instagram className="w-4 h-4 text-pink-600" />
+                  Instagram
+                </Label>
+                <Input
+                  id="instagram"
+                  placeholder="https://instagram.com/yourprofile"
+                  value={formData.instagram}
+                  onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="twitter" className="text-sm font-medium flex items-center gap-2">
+                  <Twitter className="w-4 h-4 text-sky-500" />
+                  Twitter / X
+                </Label>
+                <Input
+                  id="twitter"
+                  placeholder="https://twitter.com/yourhandle"
+                  value={formData.twitter}
+                  onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="linkedin" className="text-sm font-medium flex items-center gap-2">
+                  <Linkedin className="w-4 h-4 text-blue-700" />
+                  LinkedIn
+                </Label>
+                <Input
+                  id="linkedin"
+                  placeholder="https://linkedin.com/in/yourprofile"
+                  value={formData.linkedin}
+                  onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+                  className="h-11"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="whatsapp" className="text-sm font-medium flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-green-600" />
+                  WhatsApp Link
+                </Label>
+                <Input
+                  id="whatsapp"
+                  placeholder="https://wa.me/1234567890"
+                  value={formData.whatsapp}
+                  onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                  className="h-11"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use format: https://wa.me/your-phone-number (with country code, no spaces)
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                Business Categories
+              </CardTitle>
+              <CardDescription>Select categories and subcategories that fit your business</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Categories</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {Object.keys(categoryMap).map((cat) => {
+                    const active = selectedCategories.includes(cat)
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedCategories((prev) => active ? prev.filter(c => c !== cat) : [...prev, cat])}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${active ? 'text-white shadow-sm' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+                        style={active ? { backgroundColor: selectedColors.primary, borderColor: selectedColors.primary } : {}}
+                      >
+                        {cat}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {selectedCategories.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium">Subcategories</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedCategories.flatMap((cat) => categoryMap[cat] || []).map((sub) => {
+                      const active = selectedSubcategories.includes(sub)
+                      return (
+                        <button
+                          key={sub}
+                          type="button"
+                          onClick={() => setSelectedSubcategories((prev) => active ? prev.filter(s => s !== sub) : [...prev, sub])}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-all ${active ? '' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'}`}
+                          style={active ? { 
+                            backgroundColor: selectedColors.light, 
+                            color: selectedColors.dark,
+                            borderColor: selectedColors.accent 
+                          } : {}}
+                        >
+                          {sub}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Button 
             onClick={handleSave} 
             disabled={saving} 
-            className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-12 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            style={{ 
+              background: `linear-gradient(to right, ${selectedColors.primary}, ${selectedColors.dark})`,
+            }}
             size="lg"
           >
-            <Save className="mr-2 h-4 w-4" />
+            <Save className="mr-2 h-5 w-5" />
             {saving ? "Saving..." : "Save Settings"}
           </Button>
         </div>
 
         {/* Live Preview */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Live Preview</CardTitle>
+        <div className="space-y-6 lg:col-span-1">
+          <Card className="border-0 shadow-md sticky top-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Live Preview</CardTitle>
               <CardDescription>See how your store will look to customers</CardDescription>
             </CardHeader>
             <CardContent>
@@ -490,9 +665,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Store Information</CardTitle>
+          <Card className="border-0 shadow-md">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">Store Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between">

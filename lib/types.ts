@@ -20,6 +20,12 @@ export interface Vendor {
   banner?: { url: string; public_id: string } | null
   theme_color: "blue" | "green" | "purple"
   whatsapp_number?: string
+  // Social links
+  facebook?: string
+  instagram?: string
+  twitter?: string
+  linkedin?: string
+  whatsapp?: string
   is_active: boolean
   approval_status: 'pending' | 'approved' | 'rejected'
   admin_notes?: string
@@ -31,6 +37,14 @@ export interface Vendor {
   placeId?: string
   components?: Record<string, any>
   business_type?: 'products' | 'services'
+  business_categories?: string[]
+  business_subcategories?: string[]
+  // Social Media Links
+  facebook?: string
+  instagram?: string
+  twitter?: string
+  linkedin?: string
+  whatsapp?: string
   created_at: string
   updated_at: string
 }

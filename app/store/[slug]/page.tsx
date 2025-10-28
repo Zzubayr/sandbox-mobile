@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { getThemeColors } from "@/lib/theme-colors"
 import Image from "next/image"
 import Link from "next/link"
+import { Facebook, Instagram, Twitter, Linkedin, Phone } from "lucide-react"
 
 interface StorePageProps {
   params: Promise<{ slug: string }>
@@ -159,8 +160,70 @@ export default async function StorePage({ params, searchParams }: StorePageProps
               {vendor.description && (
                 <p className="text-sm md:text-base text-muted-foreground mb-4 text-pretty">{vendor.description}</p>
               )}
+              
+              {/* Social Media Links */}
+              {(vendor.facebook || vendor.instagram || vendor.twitter || vendor.linkedin || vendor.whatsapp) && (
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  {vendor.facebook && (
+                    <a
+                      href={vendor.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+                      aria-label="Facebook"
+                    >
+                      <Facebook className="w-5 h-5 text-blue-600" />
+                    </a>
+                  )}
+                  {vendor.instagram && (
+                    <a
+                      href={vendor.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+                      aria-label="Instagram"
+                    >
+                      <Instagram className="w-5 h-5 text-pink-600" />
+                    </a>
+                  )}
+                  {vendor.twitter && (
+                    <a
+                      href={vendor.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+                      aria-label="Twitter"
+                    >
+                      <Twitter className="w-5 h-5 text-sky-500" />
+                    </a>
+                  )}
+                  {vendor.linkedin && (
+                    <a
+                      href={vendor.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+                      aria-label="LinkedIn"
+                    >
+                      <Linkedin className="w-5 h-5 text-blue-700" />
+                    </a>
+                  )}
+                  {vendor.whatsapp && (
+                    <a
+                      href={vendor.whatsapp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+                      aria-label="WhatsApp"
+                    >
+                      <Phone className="w-5 h-5 text-green-600" />
+                    </a>
+                  )}
+                </div>
+              )}
+
               <p className="text-xs md:text-sm text-muted-foreground">
-                Powered by <span className="font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Ummah Square</span>
+                Powered by <span className="font-semibold bg-gradient-to-r from-[#2B6DA9] to-[#20527F] bg-clip-text text-transparent">Ummah Square</span>
               </p>
             </div>
           </CardContent>

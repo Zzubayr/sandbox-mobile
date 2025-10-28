@@ -1,16 +1,16 @@
 export const themeColors = {
   blue: {
-    primary: "rgb(37 99 235)", // blue-600
-    secondary: "rgb(59 130 246)", // blue-500
-    accent: "rgb(147 197 253)", // blue-300
-    light: "rgb(239 246 255)", // blue-50
-    dark: "rgb(30 64 175)", // blue-700
-    darker: "rgb(29 78 216)", // blue-800
-    gradient: "from-blue-500 to-blue-700",
-    hover: "hover:bg-blue-700",
-    border: "border-blue-200",
-    text: "text-blue-600",
-    bg: "bg-blue-50",
+    primary: "rgb(43 109 169)", // #2B6DA9
+    secondary: "rgb(58 130 194)", // Lighter shade
+    accent: "rgb(147 186 217)", // Light accent
+    light: "rgb(235 243 250)", // Very light blue
+    dark: "rgb(32 82 127)", // Darker shade
+    darker: "rgb(24 61 95)", // Even darker
+    gradient: "from-[#2B6DA9] to-[#20527F]",
+    hover: "hover:bg-[#20527F]",
+    border: "border-[#93BAD9]",
+    text: "text-[#2B6DA9]",
+    bg: "bg-[#EBF3FA]",
   },
   green: {
     primary: "rgb(22 163 74)", // green-600

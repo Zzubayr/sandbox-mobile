@@ -10,7 +10,6 @@ export default async function DashboardPage() {
     await connectToDatabase()
     const vendor = await Vendor.findOne({ user_id: user.id }).lean()
     if (!vendor) redirect('/onboarding')
-    if (!vendor.whatsapp_number || !vendor.store_name) redirect('/onboarding')
     return <DashboardContent />
   } catch {
     redirect('/auth/login?next=/dashboard')

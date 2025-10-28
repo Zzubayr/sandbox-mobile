@@ -31,7 +31,7 @@ export default function SignupSuccessPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="text-center">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Sandbox</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#2B6DA9] to-[#20527F] bg-clip-text text-transparent">Ummah Square</h1>
           </div>
           <Card>
             <CardHeader>
@@ -52,7 +52,7 @@ export default function SignupSuccessPage() {
                   </p>
                   <Button
                     onClick={() => router.push('/onboarding')}
-                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    className="w-full bg-gradient-to-r from-[#2B6DA9] to-[#20527F] hover:from-[#20527F] hover:to-[#183D5F]"
                   >
                     Continue to Setup <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>

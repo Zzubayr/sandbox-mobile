@@ -66,7 +66,6 @@ export function Header({ title, userEmail, mobileSidebar }: HeaderProps) {
           </div>
           <div>
             <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Sandbox
             </h1>
             <p className="text-xs text-slate-500 hidden sm:block">Dashboard</p>
           </div>
@@ -75,6 +74,7 @@ export function Header({ title, userEmail, mobileSidebar }: HeaderProps) {
         <div className="flex items-center gap-2 md:gap-4">
           <div
             className="relative hidden sm:block cursor-pointer"
+            data-tour="header-search"
             onClick={handleSearchClick}
           >
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -93,6 +93,7 @@ export function Header({ title, userEmail, mobileSidebar }: HeaderProps) {
             size="icon"
             className="sm:hidden min-w-[44px] min-h-[44px]"
             onClick={handleSearchClick}
+            data-tour="header-search"
           >
             <Search className="h-4 w-4" />
           </Button>

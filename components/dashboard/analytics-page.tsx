@@ -59,24 +59,24 @@ export default function AnalyticsPage() {
       startDate.setDate(startDate.getDate() - days)
 
       // Get all data
-      const [prodsRes, reqsRes, recentRes] = await Promise.all([
+      const [prodsRes, reqsRes] = await Promise.all([
         fetch('/api/dashboard/products', { cache: 'no-store' }),
-        fetch('/api/dashboard/requests', { cache: 'no-store' }),
         fetch('/api/dashboard/requests', { cache: 'no-store' }),
       ])
       const productsJson = prodsRes.ok ? await prodsRes.json() : { products: [] }
       const requestsJson = reqsRes.ok ? await reqsRes.json() : { requests: [] }
-      const recentJson = recentRes.ok ? await recentRes.json() : { requests: [] }
-      const requests = (requestsJson.requests || []).filter((r: any) => new Date(r.created_at) >= startDate)
+      const allRequests = requestsJson.requests || []
+      const requests = allRequests.filter((r: any) => new Date(r.created_at) >= startDate)
       const products = productsJson.products || []
-      const recentRequests = (recentJson.requests || []).slice(0, 10)
+      const totalProducts = Array.isArray(products) ? products.length : 0
+      const recentRequests = allRequests.slice(0, 10)
 
       // Calculate analytics
       const totalRequests = requests.length
       const pendingRequests = requests.filter(r => r.status === 'pending').length
       const completedRequests = requests.filter(r => r.status === 'completed').length
       const cancelledRequests = requests.filter(r => r.status === 'cancelled').length
-      const totalRevenue = requests.reduce((sum, r) => sum + r.total_amount, 0)
+      const totalRevenue = requests.reduce((sum, r) => sum + (r.total_amount || 0), 0)
       const averageOrderValue = totalRequests > 0 ? totalRevenue / totalRequests : 0
       const conversionRate = totalRequests > 0 ? (completedRequests / totalRequests) * 100 : 0
 
@@ -95,7 +95,9 @@ export default function AnalyticsPage() {
             }
             const stats = productStats.get(productId)
             stats.requestCount += 1
-            stats.revenue += item.price * item.quantity
+            const price = Number(item.price || 0)
+            const qty = Number(item.quantity || 0)
+            stats.revenue += price * qty
           }
         })
       })
@@ -121,12 +123,12 @@ export default function AnalyticsPage() {
         monthlyData.push({
           month: date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
           requests: monthRequests.length,
-          revenue: monthRequests.reduce((sum, r) => sum + r.total_amount, 0)
+          revenue: monthRequests.reduce((sum, r) => sum + (r.total_amount || 0), 0)
         })
       }
 
       setAnalyticsData({
-        totalProducts: totalProducts || 0,
+        totalProducts,
         totalRequests,
         pendingRequests,
         completedRequests,

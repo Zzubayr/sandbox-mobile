@@ -1,7 +1,7 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Check, Shield, ShoppingBag, BarChart3, Search, Quote, Globe, Eye, Target, Zap, Users, TrendingUp, Star, Sparkles, Rocket, Crown, Flame, Heart, Brain, ShieldCheck } from "lucide-react"
+import { ArrowRight, Check, Shield, ShoppingBag, BarChart3, Search, Quote, Globe, Eye, Target, Zap, Users, TrendingUp, Star, Sparkles, Rocket, Crown, Flame, Heart, Brain, ShieldCheck, Store } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import logo2 from "@/public/logo2.svg"
@@ -38,8 +38,8 @@ export default function HomePage() {
           }
           
           @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
+            0%, 100% { box-shadow: 0 0 20px rgba(43, 109, 169, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(43, 109, 169, 0.6); }
           }
           
           @keyframes gradient-shift {
@@ -78,7 +78,7 @@ export default function HomePage() {
           .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
           .animate-gradient { animation: gradient-shift 3s ease infinite; }
           .animate-shimmer { 
-            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+            background: linear-gradient(90deg, #2B6DA9, #8b5cf6, #2B6DA9);
             background-size: 200% auto;
             animation: text-shimmer 2s linear infinite;
             -webkit-background-clip: text;
@@ -95,7 +95,7 @@ export default function HomePage() {
           }
           
           .neon-glow {
-            box-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6, 0 0 15px #3b82f6;
+            box-shadow: 0 0 5px #2B6DA9, 0 0 10px #2B6DA9, 0 0 15px #2B6DA9;
           }
           
           .text-gradient {
@@ -128,19 +128,19 @@ export default function HomePage() {
               <nav className="hidden md:flex items-center gap-8 text-sm">
                 <Link
                   href="#about"
-                  className="text-slate-700 hover:text-blue-600 transition-colors"
+                  className="text-slate-700 hover:text-[#2B6DA9] transition-colors"
                 >
                   About
                 </Link>
                 <Link
                   href="#features"
-                  className="text-slate-700 hover:text-blue-600 transition-colors"
+                  className="text-slate-700 hover:text-[#2B6DA9] transition-colors"
                 >
                   Features
                 </Link>
                 <Link
                   href="#analytics"
-                  className="text-slate-700 hover:text-blue-600 transition-colors"
+                  className="text-slate-700 hover:text-[#2B6DA9] transition-colors"
                 >
                   Projections
                 </Link>
@@ -148,12 +148,12 @@ export default function HomePage() {
               <div className="flex items-center gap-4">
                 <Link
                   href="/auth/login"
-                  className="text-slate-700 hover:text-blue-600 transition-colors"
+                  className="text-slate-700 hover:text-[#2B6DA9] transition-colors"
                 >
                   Login
                 </Link>
                 <Link href="/auth/signup">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-2">
+                  <Button className="bg-[#2B6DA9] hover:bg-[#2B6DA9] text-white rounded-full px-6 py-2">
                     Start selling
                   </Button>
                 </Link>
@@ -201,9 +201,7 @@ export default function HomePage() {
                       <div className="flex items-center gap-3 sm:gap-4">
                         {/* Store icon */}
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 sm:w-7 sm:h-7 bg-blue-600 rounded-sm flex items-center justify-center">
-                            <div className="w-3 h-2.5 sm:w-3.5 sm:h-3 bg-white rounded-sm"></div>
-                          </div>
+                          <Store className="w-6 h-6 sm:w-7 sm:h-7" color="#2B6DA9" />
                           <span className="text-slate-700 text-base sm:text-lg font-medium">
                             My store
                           </span>
@@ -224,7 +222,7 @@ export default function HomePage() {
                         {/* Submit button */}
                         <button
                           type="submit"
-                          className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-colors"
+                          className="w-10 h-10 sm:w-11 sm:h-11 bg-[#2B6DA9] hover:bg-[#2B6DA9] rounded-full flex items-center justify-center transition-colors"
                         >
                           <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                         </button>
@@ -246,7 +244,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 max-w-6xl grid md:grid-cols-2 gap-12 items-center">
           <Reveal>
             <div className="order-2 md:order-1 space-y-6">
-              <span className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full">
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-[#2B6DA9] bg-[#2B6DA9]/10 px-3 py-1 rounded-full">
                 <ShoppingBag className="h-4 w-4" /> Premium Storefronts
               </span>
               <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900">
@@ -275,7 +273,7 @@ export default function HomePage() {
           </Reveal>
           <Reveal>
             <div className="order-1 md:order-2 relative">
-              <div className="absolute inset-0 -z-10 blur-3xl opacity-40 bg-gradient-to-tr from-blue-200 via-purple-200 to-pink-200 rounded-[2rem]"></div>
+              <div className="absolute inset-0 -z-10 blur-3xl opacity-40 bg-gradient-to-tr from-[#2B6DA9]/20 via-purple-200 to-pink-200 rounded-[2rem]"></div>
               <div className="relative rounded-2xl overflow-hidden">
                 <Image
                   src="/strf.gif"
@@ -295,7 +293,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 max-w-6xl grid md:grid-cols-2 gap-12 items-center">
           <Reveal>
             <div className="relative">
-              <div className="absolute inset-0 -z-10 blur-3xl opacity-30 bg-gradient-to-br from-indigo-600/30 via-blue-500/20 to-cyan-400/20 rounded-[2rem]"></div>
+              <div className="absolute inset-0 -z-10 blur-3xl opacity-30 bg-gradient-to-br from-indigo-600/30 via-[#2B6DA9]/20 to-cyan-400/20 rounded-[2rem]"></div>
               <div className="relative rounded-2xl border border-white/10 bg-white/5 shadow-2xl overflow-hidden">
                 <Image
                   src="/visible.gif"
@@ -413,7 +411,7 @@ export default function HomePage() {
         <div className="mx-auto w-full max-w-4xl px-4">
           <Reveal>
             <div className="text-center mb-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#2B6DA9] rounded-full mb-8">
                 <Star className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-4xl md:text-5xl font-display font-bold text-slate-800 mb-8 leading-tight">
@@ -434,7 +432,7 @@ export default function HomePage() {
                 <Link href="/auth/signup">
                   <Button
                     size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-6 text-xl font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="bg-[#2B6DA9] hover:bg-[#2B6DA9] text-white px-12 py-6 text-xl font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     <span className="flex items-center gap-3">
                       <Rocket className="h-6 w-6" />
@@ -447,7 +445,7 @@ export default function HomePage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-12 py-6 text-xl font-semibold rounded-full transition-all duration-300"
+                    className="border-2 border-[#2B6DA9] text-[#2B6DA9] hover:bg-[#2B6DA9] hover:text-white px-12 py-6 text-xl font-semibold rounded-full transition-all duration-300"
                   >
                     <span className="flex items-center gap-3">
                       <Crown className="h-6 w-6" />
@@ -459,26 +457,26 @@ export default function HomePage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-slate-600 max-w-4xl mx-auto">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Check className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-[#2B6DA9]/10 rounded-full flex items-center justify-center">
+                    <Check className="h-6 w-6 text-[#2B6DA9]" />
                   </div>
                   <span className="font-semibold">No Setup Fees</span>
                 </div>
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Crown className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-[#2B6DA9]/10 rounded-full flex items-center justify-center">
+                    <Crown className="h-6 w-6 text-[#2B6DA9]" />
                   </div>
                   <span className="font-semibold">Premium Design</span>
                 </div>
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Heart className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-[#2B6DA9]/10 rounded-full flex items-center justify-center">
+                    <Heart className="h-6 w-6 text-[#2B6DA9]" />
                   </div>
                   <span className="font-semibold">24/7 Support</span>
                 </div>
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <ShieldCheck className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-[#2B6DA9]/10 rounded-full flex items-center justify-center">
+                    <ShieldCheck className="h-6 w-6 text-[#2B6DA9]" />
                   </div>
                   <span className="font-semibold">Mobile Optimized</span>
                 </div>
