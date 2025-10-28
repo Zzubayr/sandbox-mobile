@@ -122,7 +122,13 @@ export default function DashboardTour() {
   }, [isMobile])
 
   const current = steps[idx]
-  const rect = useElementRect(current ? current.selector : null)
+  // On mobile, when pointing to sidebar items, highlight the hamburger instead
+  const effectiveSelector = current
+    ? (isMobile && current.id.startsWith('sidebar-')
+        ? '[data-tour="hamburger"]'
+        : current.selector)
+    : null
+  const rect = useElementRect(effectiveSelector)
 
   // Responsive: detect mobile viewport
   useEffect(() => {
@@ -145,13 +151,6 @@ export default function DashboardTour() {
     const start = () => {
       setIdx(0)
       setOpen(true)
-      // If first step is sidebar on mobile, open the drawer immediately
-      try {
-        const first = steps[0]
-        if (isMobile && first?.id.startsWith('sidebar-')) {
-          window.dispatchEvent(new Event('dashboard-tour:sidebar-open'))
-        }
-      } catch {}
     }
     window.addEventListener("dashboard-tour:start", start)
     return () => window.removeEventListener("dashboard-tour:start", start)
@@ -159,29 +158,20 @@ export default function DashboardTour() {
 
   // Ensure target is visible when step changes
   useEffect(() => {
-    if (!current?.selector) return
-    const el = document.querySelector(current.selector) as HTMLElement | null
+    if (!effectiveSelector) return
+    const el = document.querySelector(effectiveSelector) as HTMLElement | null
     if (!el) return
-    // On mobile, ensure the mobile sidebar is open if step targets sidebar
-    if (isMobile) {
-      if (current.selector.includes('sidebar-')) {
-        window.dispatchEvent(new Event('dashboard-tour:sidebar-open'))
-      } else {
-        window.dispatchEvent(new Event('dashboard-tour:sidebar-close'))
-      }
-    }
     const r = el.getBoundingClientRect()
     const inView = r.top >= 64 && r.bottom <= window.innerHeight - 64
     if (!inView) {
       try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch {}
     }
-  }, [idx, current?.selector])
+  }, [idx, effectiveSelector])
 
   const closeTour = (markDone: boolean) => {
     if (markDone) {
       try { localStorage.setItem("dashboardTourDone", "1") } catch {}
     }
-    try { window.dispatchEvent(new Event('dashboard-tour:sidebar-close')) } catch {}
     setOpen(false)
   }
 

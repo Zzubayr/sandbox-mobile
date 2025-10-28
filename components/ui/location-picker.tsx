@@ -120,7 +120,7 @@ export default function LocationPicker({ value, onChange, placeholder = "Search 
         setGeoError(err?.message || "Unable to fetch your location.")
         setGeolocating(false)
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 60000 }
     )
   }
 

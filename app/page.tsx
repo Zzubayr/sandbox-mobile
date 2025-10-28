@@ -148,7 +148,7 @@ export default function HomePage() {
               <div className="flex items-center gap-4">
                 <Link
                   href="/auth/login"
-                  className="text-slate-700 hover:text-[#2B6DA9] transition-colors"
+                  className="text-slate-700 hover:text-[#2B6DA9] transition-colors hidden sm:inline"
                 >
                   Login
                 </Link>
