@@ -110,6 +110,12 @@ export const SERVICE_CATEGORIES: Record<string, string[]> = {
     'Gardening & Landscaping',
     'Pest Control'
   ],
+  "Personal & Household Services":[
+    "Laundry & Dry-Cleaning Services",
+    "Tailoring & Alterations",
+    "Housekeeping / Domestic Help",
+    "Pet Grooming",
+  ],
   'Delivery & Logistics': [
     'Courier Services',
     'Moving & Transportation',
