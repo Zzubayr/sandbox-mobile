@@ -62,12 +62,29 @@ export default function SignupPage() {
         callbackURL: "/auth/post-login",
       });
       if (error) throw error;
-      toastHelpers.success("Account Created", "Welcome!");
+      // When requireEmailVerification is enabled on the server, users won't be
+      // auto-signed-in. Let them know to check their inbox.
+      toastHelpers.success(
+        "Verification Email Sent",
+        "Please check your inbox to verify your account, then sign in."
+      );
+      try { router.push("/auth/login"); } catch {}
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : "An unexpected error occurred";
-      setError(errorMessage);
-      toastHelpers.error("Signup Failed", errorMessage);
+      // Targeted handling for duplicate email (422 USER_ALREADY_EXISTS...)
+      const isDuplicate =
+        typeof errorMessage === "string" &&
+        (errorMessage.toLowerCase().includes("already exists") ||
+          errorMessage.toUpperCase().includes("USER_ALREADY_EXISTS"));
+      if (isDuplicate) {
+        const msg = "An account with this email already exists. Please sign in or use Google.";
+        setError(msg);
+        toastHelpers.error("Account Exists", msg);
+      } else {
+        setError(errorMessage);
+        toastHelpers.error("Signup Failed", errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -152,8 +169,8 @@ export default function SignupPage() {
           <p className="text-slate-600">Start your vendor journey today</p>
         </div>
 
-        {/* Signup Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
+            {/* Signup Form */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
           <div className="mb-6">
             <h2 className="text-2xl font-semibold text-slate-800 mb-2">
               Create Account
@@ -347,6 +364,15 @@ export default function SignupPage() {
               )}
             </Button>
           </form>
+
+          {/* If email already exists, offer a quick path to login */}
+          {error && error.toLowerCase().includes("already exists") && (
+            <div className="mt-4 text-center">
+              <Link href="/auth/login" className="text-[#2B6DA9] hover:text-[#20527F] underline">
+                Go to Login
+              </Link>
+            </div>
+          )}
 
           {/* Divider */}
           <div className="relative my-6">

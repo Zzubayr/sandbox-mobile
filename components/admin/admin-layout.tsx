@@ -7,15 +7,16 @@ import { AdminHeader } from "./admin-header"
 
 interface AdminLayoutProps {
   userEmail?: string
+  isSuperAdmin?: boolean
   children: React.ReactNode
 }
 
-export function AdminLayout({ userEmail, children }: AdminLayoutProps) {
+export function AdminLayout({ userEmail, isSuperAdmin, children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isSuperAdmin={!!isSuperAdmin} />
       <div className="lg:pl-64">
         <AdminHeader 
           userEmail={userEmail} 

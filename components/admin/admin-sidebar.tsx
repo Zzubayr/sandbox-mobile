@@ -26,9 +26,10 @@ const quickStats = [
 interface AdminSidebarProps {
   isOpen: boolean
   onClose: () => void
+  isSuperAdmin?: boolean
 }
 
-export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
+export function AdminSidebar({ isOpen, onClose, isSuperAdmin }: AdminSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -67,7 +68,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       {/* Navigation */}
       <nav className="mt-6 px-3">
         <div className="space-y-1">
-          {navigation.map((item) => {
+          {[...navigation, ...(isSuperAdmin ? [{ name: 'User Management', href: '/admin/users', icon: Users }] : [])].map((item) => {
             const isActive = pathname === item.href
             return (
               <Link

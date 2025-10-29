@@ -238,6 +238,12 @@ export function AdminDashboard({ initialStats }: AdminDashboardProps) {
                 <span>Manage Vendors</span>
               </Button>
             </Link>
+            <Link href="/admin/users">
+              <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
+                <Users className="h-6 w-6" />
+                <span>Manage Users</span>
+              </Button>
+            </Link>
             <Link href="/admin/analytics">
               <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
                 <TrendingUp className="h-6 w-6" />

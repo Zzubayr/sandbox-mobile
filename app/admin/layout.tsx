@@ -9,9 +9,10 @@ export default async function AdminRootLayout({
   children: React.ReactNode;
 }) {
   try {
-    const { session } = await requireAdmin(); // returns { session, admin }
+    const { session, admin } = await requireAdmin(); // returns { session, admin }
     const userEmail = session.user.email as string | undefined;
-    return <AdminShell userEmail={userEmail}>{children}</AdminShell>;
+    const isSuperAdmin = (admin as any)?.role === 'super_admin';
+    return <AdminShell userEmail={userEmail} isSuperAdmin={isSuperAdmin}>{children}</AdminShell>;
   } catch {
     // Not admin or not logged in
     redirect("/auth/login?next=/admin");

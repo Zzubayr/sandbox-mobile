@@ -197,7 +197,14 @@ export default function LoginPage() {
                 </div>
               )}
             </Button>
-              </form>
+
+            {/* Forgot password link */}
+            <div className="mt-3 text-right">
+              <Link href="/auth/forgot-password" className="text-sm text-[#2B6DA9] hover:text-[#20527F]">
+                Forgot password?
+              </Link>
+            </div>
+          </form>
 
           {/* Divider */}
           <div className="relative my-6">
