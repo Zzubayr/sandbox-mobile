@@ -79,7 +79,7 @@ export function StorefrontHeader({ vendor, cartItemCount = 0 }: StorefrontHeader
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search products... (⌘K)"
+                  placeholder="Search products... (Ctrl/?+K)"
                   className="w-[200px] pl-8 lg:w-[300px] h-9 px-3 py-1 text-sm border border-input bg-background rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
                   onClick={handleSearchClick}
                   onFocus={handleSearchClick}
@@ -100,4 +100,6 @@ export function StorefrontHeader({ vendor, cartItemCount = 0 }: StorefrontHeader
     </header>
   );
 }
+
+
 

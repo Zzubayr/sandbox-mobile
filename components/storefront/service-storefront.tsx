@@ -24,10 +24,7 @@ export default function ServiceStorefront({ vendor }: { vendor: any }) {
   const rates: Array<{ name: string; description?: string; price: number; unit?: string }> = Array.isArray(vendor.service_rates) ? vendor.service_rates : [];
   const colors = getThemeColors(vendor.theme_color);
 
-  // Debug logging
-  console.log('Storefront - services_gallery raw:', vendor.services_gallery);
-  console.log('Storefront - gallery processed:', gallery);
-  console.log('Storefront - gallery length:', gallery?.length);
+  // No debug logs in production UI
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);

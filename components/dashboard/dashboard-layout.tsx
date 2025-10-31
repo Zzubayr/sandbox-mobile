@@ -46,8 +46,6 @@ export default function DashboardLayout({ children, userEmail, vendor }: Dashboa
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
           title="Dashboard"
-          userEmail={userEmail}
-          isService={vendor?.business_type === 'services'}
           mobileSidebar={<MobileSidebar storeName={vendor?.store_name} isService={vendor?.business_type === 'services'} />}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100">
@@ -59,7 +57,7 @@ export default function DashboardLayout({ children, userEmail, vendor }: Dashboa
           )}
           {children}
           {/* Guided Tour overlay */}
-          <DashboardTour />
+          <DashboardTour isService={vendor?.business_type === 'services'} />
         </main>
       </div>
     </div>

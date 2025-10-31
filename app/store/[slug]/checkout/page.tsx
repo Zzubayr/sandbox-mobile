@@ -63,7 +63,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!vendor || state.items.length === 0) return
+    if (!vendor || vendorItems.length === 0) return
 
     setSubmitting(true)
 
@@ -72,7 +72,7 @@ export default function CheckoutPage() {
         customerName: formData.customerName,
         customerPhone: formData.customerPhone,
         customerNote: formData.customerNote || undefined,
-        items: state.items.map((it: { product: any; quantity: number }) => ({
+        items: vendorItems.map((it: { product: any; quantity: number }) => ({
           productId: it.product.id,
           quantity: it.quantity,
         })),
@@ -115,7 +115,11 @@ export default function CheckoutPage() {
     return <PendingApprovalPage vendor={vendor} />
   }
 
-  if (state.items.length === 0) {
+  const vendorItems = state.items.filter((it: any) => (it.product?.vendor_id || (it.product?.vendor_id as any)?._id) === vendor.id)
+  const vendorItemCount = vendorItems.reduce((sum: number, it: any) => sum + it.quantity, 0)
+  const vendorTotal = vendorItems.reduce((sum: number, it: any) => sum + (it.product?.price || 0) * it.quantity, 0)
+
+  if (vendorItems.length === 0) {
     return null
   }
 
@@ -123,7 +127,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
-      <StorefrontHeader vendor={vendor} cartItemCount={state.itemCount} />
+      <StorefrontHeader vendor={vendor} cartItemCount={vendorItemCount} />
 
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-4 md:mb-6">
@@ -145,10 +149,10 @@ export default function CheckoutPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg md:text-xl">Order Summary</CardTitle>
-                <CardDescription>{state.itemCount} items</CardDescription>
+                <CardDescription>{vendorItemCount} items</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {state.items.map((item: { product: any; quantity: number }) => (
+                {vendorItems.map((item: { product: any; quantity: number }) => (
                   <div key={item.product.id} className="flex gap-3 md:gap-4">
                     <div className="w-12 h-12 md:w-16 md:h-16 relative bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
                       {item.product.images && item.product.images.length > 0 ? (
@@ -181,7 +185,7 @@ export default function CheckoutPage() {
                 <div className="space-y-2 text-sm md:text-base">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>₦{state.total.toLocaleString()}</span>
+                    <span>₦{vendorTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Shipping:</span>
@@ -190,7 +194,7 @@ export default function CheckoutPage() {
                   <Separator />
                   <div className="flex justify-between text-base md:text-lg font-bold">
                     <span>Total:</span>
-                    <span style={{ color: colors.primary }}>₦{state.total.toLocaleString()}</span>
+                    <span style={{ color: colors.primary }}>₦{vendorTotal.toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>

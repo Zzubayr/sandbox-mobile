@@ -2,54 +2,26 @@
 
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
 
 import { Button } from "@/components/ui/button";
 import {
   Bell,
   Search,
   User,
-  Store,
-  LogOut,
-  Settings,
-  Package,
-  ShoppingCart,
 } from "lucide-react";
 import { useSpotlightSearch } from "@/hooks/use-spotlight-search";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import logo from "@/public/logo.svg";
 import Image from "next/image";
 
 interface HeaderProps {
   title: string;
-  userEmail?: string;
   mobileSidebar?: React.ReactNode;
-  isService?: boolean;
 }
 
-export function Header({ title, userEmail, mobileSidebar, isService }: HeaderProps) {
+export function Header({ mobileSidebar }: HeaderProps) {
   const router = useRouter();
   const { openSearch } = useSpotlightSearch();
-
-  const handleLogout = async () => {
-    try {
-      await authClient.signOut({
-        fetchOptions: {
-          onSuccess: () => router.push('/auth/login'),
-        },
-      })
-    } catch {
-      router.push('/auth/login')
-    }
-  };
 
   const handleSearchClick = () => {
     openSearch("dashboard");
@@ -103,78 +75,18 @@ export function Header({ title, userEmail, mobileSidebar, isService }: HeaderPro
             <Bell className="h-4 w-4" />
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Account</p>
-                  <p className="text-xs leading-none text-muted-foreground truncate">
-                    {userEmail}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/dashboard")}>
-                <Store className="mr-2 h-4 w-4" />
-                Dashboard
-              </DropdownMenuItem>
-              {isService ? (
-                <>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/about")}>
-                    <Store className="mr-2 h-4 w-4" />
-                    About & Contact
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/hours")}>
-                    <Store className="mr-2 h-4 w-4" />
-                    Business Hours
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/rates")}>
-                    <Store className="mr-2 h-4 w-4" />
-                    Services & Rates
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/gallery")}>
-                    <Package className="mr-2 h-4 w-4" />
-                    Gallery
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/products")}>
-                    <Package className="mr-2 h-4 w-4" />
-                    Products
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/dashboard/requests")}>
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Requests
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => router.push("/dashboard/settings")}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-red-600 focus:text-red-600"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button 
+            variant="ghost" 
+            className="relative h-8 w-8 rounded-full"
+            onClick={() => router.push("/dashboard/settings")}
+            title="Go to Settings"
+          >
+            <Avatar className="h-8 w-8 cursor-pointer">
+              <AvatarFallback>
+                <User className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
         </div>
       </div>
     </header>

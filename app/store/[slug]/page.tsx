@@ -83,14 +83,18 @@ export default async function StorePage({ params, searchParams }: StorePageProps
 
       {/* Hero Banner */}
       {vendor.banner_url && (
-        <div className="relative h-48 md:h-64 lg:h-80 overflow-hidden">          <Image 
+        <div className="relative h-48 md:h-64 lg:h-80 overflow-hidden">
+          <Image 
             src={vendor.banner_url || "/placeholder.svg"} 
             alt={vendor.store_name} 
             fill 
             className="object-cover" 
             priority={true}
           />
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+          <div 
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${colors.primary}E6 0%, ${colors.dark}E6 100%)` }}
+          >
             <div className="text-center text-white px-4">
               <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold mb-2 text-balance">{vendor.store_name}</h1>
               {vendor.description && (
@@ -110,7 +114,11 @@ export default async function StorePage({ params, searchParams }: StorePageProps
               <Link href={`/store/${slug}`}>
                 <Badge
                   variant="outline"
-                  className={`cursor-pointer text-xs md:text-sm ${!categoryIdFilter ? 'bg-gray-900 text-white hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+                  className={`cursor-pointer text-xs md:text-sm hover:opacity-90`}
+                  style={!categoryIdFilter 
+                    ? ({ background: `linear-gradient(135deg, ${colors.primary}, ${colors.dark})`, color: '#fff', borderColor: 'transparent' } as any)
+                    : ({ borderColor: colors.primary } as any)
+                  }
                 >
                   All Products
                 </Badge>
@@ -123,8 +131,11 @@ export default async function StorePage({ params, searchParams }: StorePageProps
                 >
                   <Badge
                     variant="outline"
-                    className={`cursor-pointer text-xs md:text-sm ${categoryIdFilter === String(category.id) ? 'bg-gray-900 text-white hover:bg-gray-800' : 'hover:bg-gray-100'}`}
-                    style={{ borderColor: colors.primary }}
+                    className={`cursor-pointer text-xs md:text-sm hover:opacity-90`}
+                    style={categoryIdFilter === String(category.id)
+                      ? ({ background: `linear-gradient(135deg, ${colors.primary}, ${colors.dark})`, color: '#fff', borderColor: 'transparent' } as any)
+                      : ({ borderColor: colors.primary } as any)
+                    }
                   >
                     {category.name}
                   </Badge>

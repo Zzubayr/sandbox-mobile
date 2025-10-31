@@ -107,7 +107,11 @@ function useElementRect(selector: string | null) {
   return rect
 }
 
-export default function DashboardTour() {
+interface DashboardTourProps {
+  isService?: boolean
+}
+
+export default function DashboardTour({ isService = false }: DashboardTourProps) {
   const [open, setOpen] = useState(false)
   const [idx, setIdx] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
@@ -116,12 +120,11 @@ export default function DashboardTour() {
   const steps = useMemo<Step[]>(() => {
     const bannerEl = document.querySelector('[data-tour="approval-banner"]')
     const base = [...BASE_STEPS]
-    // If service sidebar anchors exist, include service steps and remove product-only steps
-    const hasService = !!document.querySelector('[data-tour="sidebar-about"], [data-tour="sidebar-hours"], [data-tour="sidebar-rates"], [data-tour="sidebar-gallery"]')
-    const filteredBase = hasService
+    // For service businesses, remove product-only steps and add service-specific steps
+    const filteredBase = isService
       ? base.filter(s => !['sidebar-products','sidebar-requests','sidebar-analytics'].includes(s.id))
       : base
-    const withService = hasService ? [...filteredBase, ...SERVICE_STEPS] : base
+    const withService = isService ? [...filteredBase, ...SERVICE_STEPS] : base
     const sidebar = withService.filter(s => s.id.startsWith('sidebar-'))
     const nonSidebar = withService.filter(s => !s.id.startsWith('sidebar-'))
     const headerSearch = nonSidebar.find(s => s.id === 'header-search')
@@ -152,7 +155,7 @@ export default function DashboardTour() {
       ]
     }
     return ordered
-  }, [isMobile])
+  }, [isMobile, isService])
 
   const current = steps[idx]
   // On mobile, when pointing to sidebar items, highlight the hamburger instead

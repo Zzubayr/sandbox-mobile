@@ -17,6 +17,10 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 export const auth = betterAuth({
   database: client ? mongodbAdapter(db, { client }) : mongodbAdapter(db),
+  // CRITICAL: baseURL is required for generating valid email verification and password reset links
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  // CRITICAL: secret is required for signing tokens (password reset, email verification, etc.)
+  secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET,
   // Ensure Better Auth trusts your app origins for redirects and CSRF
   trustedOrigins: [
     process.env.NEXT_PUBLIC_SITE_URL || '',
@@ -24,32 +28,15 @@ export const auth = betterAuth({
   ].filter(Boolean),
   emailAndPassword: {
     enabled: true,
-    // Require users to verify email before auto sign-in on signup
-    requireEmailVerification: true,
-    // autoSignIn: true, // default when not requiring verification
-    // Password reset email sender
-    sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
-      if (!resend) return;
-      await resend.emails.send({
-        from: process.env.MAIL_FROM || 'no-reply@localhost',
-        to: user.email,
-        subject: 'Reset your Ummah Square password',
-        html: `<p>We received a request to reset your password.</p><p><a href="${url}">Click here to reset your password</a></p><p>If you did not request this, you can ignore this email.</p>`
-      });
-    },
+    // Do NOT require verification; sign in immediately on signup
+    requireEmailVerification: false,
+    // Disable password reset emails entirely
+    sendResetPassword: undefined as any,
   },
+  // Disable verification emails entirely
   emailVerification: {
-    // Optionally send verification on sign up; also triggered when requireEmailVerification is true
-    sendOnSignUp: true,
-    sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
-      if (!resend) return;
-      await resend.emails.send({
-        from: process.env.MAIL_FROM || 'no-reply@localhost',
-        to: user.email,
-        subject: 'Verify your Ummah Square email',
-        html: `<p>Welcome to Ummah Square!</p><p><a href="${url}">Click here to verify your email</a></p>`
-      });
-    },
+    sendOnSignUp: false,
+    sendVerificationEmail: undefined as any,
   },
   socialProviders: {
     google: {

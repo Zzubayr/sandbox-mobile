@@ -41,17 +41,22 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
     setRemoveDialog({ open: true, productId, productTitle })
   }
 
+  // Scope cart contents to this vendor only
+  const vendorItems = state.items.filter((it) => (it.product as any).vendor_id === vendor.id)
+  const vendorItemCount = vendorItems.reduce((sum, it) => sum + it.quantity, 0)
+  const vendorTotal = vendorItems.reduce((sum, it) => sum + it.product.price * it.quantity, 0)
+
   return (
     <Sheet open={isOpen} onOpenChange={(o) => (o ? open() : close())}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <ShoppingCart className="h-5 w-5" />
-          {state.itemCount > 0 && (
+          {vendorItemCount > 0 && (
             <Badge
               className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
               style={{ backgroundColor: colors.primary }}
             >
-              {state.itemCount}
+              {vendorItemCount}
             </Badge>
           )}
         </Button>
@@ -61,16 +66,16 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
           <SheetTitle className="text-lg font-semibold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             Shopping Cart
-            {state.itemCount > 0 && (
+            {vendorItemCount > 0 && (
               <span className="bg-slate-900 text-white text-xs px-2 py-1 rounded-full">
-                {state.itemCount}
+                {vendorItemCount}
               </span>
             )}
           </SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col h-full">
-          {state.items.length === 0 ? (
+          {vendorItems.length === 0 ? (
             <div className="flex-1 flex items-center justify-center px-6">
               <div className="text-center">
                 <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
@@ -90,7 +95,7 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
             <>
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <div className="space-y-3">
-                  {state.items.map((item) => (
+                  {vendorItems.map((item) => (
                     <div key={item.product.id} className="flex gap-4 p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                       <div className="w-16 h-16 relative bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                         {item.product.images && item.product.images.length > 0 ? (
@@ -154,7 +159,7 @@ export function CartDrawer({ vendor }: CartDrawerProps) {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-slate-900">Total:</span>
                   <span className="text-2xl font-bold text-slate-900">
-                    ₦{state.total.toLocaleString()}
+                    ₦{vendorTotal.toLocaleString()}
                   </span>
                 </div>
 
