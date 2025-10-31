@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import { notFound } from "next/navigation"
 import { connectToDatabase } from "@/lib/db/connection"
 import Vendor from "@/lib/db/models/vendor"
@@ -5,6 +8,7 @@ import Product from "@/lib/db/models/product"
 import Category from "@/lib/db/models/category"
 import { StorefrontHeader } from "@/components/storefront/header"
 import { ProductCard } from "@/components/storefront/product-card"
+import ServiceStorefront from "@/components/storefront/service-storefront"
 import { MobileActions } from "@/components/storefront/mobile-actions"
 import { PendingApprovalPage } from "@/components/storefront/pending-approval-page"
 import { Card, CardContent } from "@/components/ui/card"
@@ -41,6 +45,18 @@ export default async function StorePage({ params, searchParams }: StorePageProps
   // Check if store is approved - if not, show pending approval page
   if (vendor.approval_status !== 'approved') {
     return <PendingApprovalPage vendor={vendor} />
+  }
+
+  // Service storefront
+  if (vendor.business_type === 'services') {
+    return (
+      <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <StorefrontHeader vendor={vendor} />
+        <div className="container mx-auto px-4 py-6 md:py-8">
+          <ServiceStorefront vendor={vendor} />
+        </div>
+      </div>
+    )
   }
 
   // Get products and categories

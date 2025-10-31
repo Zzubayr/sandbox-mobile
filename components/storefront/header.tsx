@@ -19,6 +19,7 @@ interface StorefrontHeaderProps {
 export function StorefrontHeader({ vendor, cartItemCount = 0 }: StorefrontHeaderProps) {
   const colors = getThemeColors(vendor.theme_color)
   const { openSearch } = useSpotlightSearch()
+  const isService = vendor.business_type === 'services'
 
   const handleSearchClick = () => {
     openSearch('storefront', vendor.store_slug)
@@ -29,27 +30,30 @@ export function StorefrontHeader({ vendor, cartItemCount = 0 }: StorefrontHeader
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-4 min-w-0 flex-1">
-                <Link href={`/store/${vendor.store_slug}`} className="flex items-center gap-3 min-w-0">
-                  {vendor.logo_url ? (
-                    <div className="h-10 w-10 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-slate-200 relative">
-                      <Image
-                        src={vendor.logo_url}
-                        alt={vendor.store_name}
-                        fill
-                        className="object-cover"
-                        priority={true}
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-lg"
-                      style={{
-                        background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`
-                      }}
-                    >
-                      {vendor.store_name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+            <Link
+              href={`/store/${vendor.store_slug}`}
+              className="flex items-center gap-3 min-w-0"
+            >
+              {vendor.logo_url ? (
+                <div className="h-10 w-10 rounded-xl overflow-hidden flex-shrink-0 shadow-sm border border-slate-200 relative">
+                  <Image
+                    src={vendor.logo_url}
+                    alt={vendor.store_name}
+                    fill
+                    className="object-cover"
+                    priority={true}
+                  />
+                </div>
+              ) : (
+                <div
+                  className="h-10 w-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
+                  }}
+                >
+                  {vendor.store_name.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="min-w-0">
                 <h1 className="text-lg md:text-xl font-bold truncate bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
                   {vendor.store_name}
@@ -65,30 +69,35 @@ export function StorefrontHeader({ vendor, cartItemCount = 0 }: StorefrontHeader
 
           <div className="flex items-center gap-2 md:gap-4">
             {/* Desktop Search */}
-            <div 
-              className="relative hidden md:block cursor-pointer"
-              onClick={handleSearchClick}
-            >
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-              <input 
-                type="text" 
-                placeholder="Search products... (⌘K)" 
-                className="w-[200px] pl-8 lg:w-[300px] h-9 px-3 py-1 text-sm border border-input bg-background rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors" 
+            {!isService && (
+              <div
+                className={`relative hidden md:block cursor-pointer ${
+                  isService ? "hidden" : ""
+                }`}
                 onClick={handleSearchClick}
-                onFocus={handleSearchClick}
-                readOnly
-              />
-            </div>
+              >
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search products... (⌘K)"
+                  className="w-[200px] pl-8 lg:w-[300px] h-9 px-3 py-1 text-sm border border-input bg-background rounded-md cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+                  onClick={handleSearchClick}
+                  onFocus={handleSearchClick}
+                  readOnly
+                />
+              </div>
+            )}
 
             {/* Mobile Search */}
-            <MobileSearch vendor={vendor} />
+            {!isService && <MobileSearch vendor={vendor} />}
 
-            <WishlistDrawer vendor={vendor} />
+            {!isService && <WishlistDrawer vendor={vendor} />}
 
-            <CartDrawer vendor={vendor} />
+            {!isService && <CartDrawer vendor={vendor} />}
           </div>
         </div>
       </div>
     </header>
-  )
+  );
 }
+

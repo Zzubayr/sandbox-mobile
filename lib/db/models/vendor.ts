@@ -30,12 +30,6 @@ export interface Vendor {
   // Business classification (industry taxonomy, not product categories)
   business_categories?: string[];
   business_subcategories?: string[];
-  // Social Media Links
-  facebook?: string;
-  instagram?: string;
-  twitter?: string;
-  linkedin?: string;
-  whatsapp?: string;
   // Location
   location?: { type: 'Point'; coordinates: [number, number] };
   address?: string;
@@ -47,6 +41,16 @@ export interface Vendor {
     postalCode?: string;
     [key: string]: any;
   };
+  // Service business specific
+  contact_email?: string;
+  business_hours?: Array<{
+    day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+    open: string; // HH:mm
+    close: string; // HH:mm
+    closed?: boolean;
+  }>;
+  services_gallery?: Array<{ url: string; public_id?: string; caption?: string }>;
+  service_rates?: Array<{ name: string; description?: string; price: number; unit?: string }>;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -77,12 +81,6 @@ const VendorSchema = new Schema<Vendor>({
   business_type: { type: String, enum: ['products', 'services'], default: 'products' },
   business_categories: { type: [String], default: undefined },
   business_subcategories: { type: [String], default: undefined },
-  // Social Media Links
-  facebook: { type: String },
-  instagram: { type: String },
-  twitter: { type: String },
-  linkedin: { type: String },
-  whatsapp: { type: String },
   // GeoJSON Point [lng, lat]
   location: {
     type: { type: String as unknown as () => 'Point', enum: ['Point'], default: 'Point' } as any,
@@ -91,6 +89,10 @@ const VendorSchema = new Schema<Vendor>({
   address: { type: String },
   placeId: { type: String },
   components: { type: Object },
+  contact_email: { type: String },
+  business_hours: { type: [Object], default: undefined },
+  services_gallery: { type: [Object], default: undefined },
+  service_rates: { type: [Object], default: undefined },
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
   toJSON: {

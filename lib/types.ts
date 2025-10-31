@@ -39,12 +39,11 @@ export interface Vendor {
   business_type?: 'products' | 'services'
   business_categories?: string[]
   business_subcategories?: string[]
-  // Social Media Links
-  facebook?: string
-  instagram?: string
-  twitter?: string
-  linkedin?: string
-  whatsapp?: string
+  // Service storefront
+  contact_email?: string
+  business_hours?: Array<{ day: string; open: string; close: string; closed?: boolean }>
+  services_gallery?: Array<{ url: string; public_id?: string; caption?: string }>
+  service_rates?: Array<{ name: string; description?: string; price: number; unit?: string }>
   created_at: string
   updated_at: string
 }

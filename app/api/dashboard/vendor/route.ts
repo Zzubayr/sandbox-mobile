@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/session";
 import { connectToDatabase } from "@/lib/db/connection";
 import Vendor from "@/lib/db/models/vendor";
+import { v2 as cloudinary } from 'cloudinary'
 
 function shapeId<T extends { _id?: any }>(doc: T) {
   if (!doc) return doc as any;
@@ -40,6 +41,29 @@ function isValidGeoPoint(input: any): input is { type: 'Point'; coordinates: [nu
   if (!input || input.type !== 'Point' || !Array.isArray(input.coordinates) || input.coordinates.length !== 2) return false;
   const [lng, lat] = input.coordinates;
   return Number.isFinite(lng) && Number.isFinite(lat);
+}
+
+function normalizeGallery(input: any): Array<{ url: string; public_id?: string }> | undefined {
+  if (!Array.isArray(input)) return undefined;
+  const mapped = input
+    .map((item: any) => {
+      if (typeof item === 'string') return { url: item };
+      if (item && typeof item === 'object') return { url: String(item.url || ''), public_id: item.public_id };
+      return null;
+    })
+    .filter((g: any) => g && typeof g.url === 'string' && g.url.trim().length > 0);
+  // de-duplicate by public_id or url
+  const seen = new Set<string>();
+  const out: any[] = [];
+  for (const g of mapped) {
+    const key = (g.public_id && String(g.public_id)) || g.url;
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(g);
+    }
+  }
+  // enforce max 15 items
+  return out.slice(0, 15);
 }
 
 export async function GET() {
@@ -80,6 +104,11 @@ export async function POST(request: NextRequest) {
       components,
       business_categories,
       business_subcategories,
+      // services-specific
+      contact_email,
+      business_hours,
+      services_gallery,
+      service_rates,
     } = body || {};
 
     if (!store_name || !theme_color) {
@@ -137,6 +166,10 @@ export async function POST(request: NextRequest) {
       address: typeof address === 'string' ? address : undefined,
       placeId: typeof placeId === 'string' ? placeId : undefined,
       components: components && typeof components === 'object' ? components : undefined,
+      contact_email: typeof contact_email === 'string' ? contact_email : undefined,
+      business_hours: Array.isArray(business_hours) ? business_hours : undefined,
+      services_gallery: normalizeGallery(services_gallery),
+      service_rates: Array.isArray(service_rates) ? service_rates : undefined,
       // social links
       facebook: typeof facebook === 'string' ? facebook : undefined,
       instagram: typeof instagram === 'string' ? instagram : undefined,
@@ -187,6 +220,8 @@ export async function PATCH(request: NextRequest) {
       "twitter",
       "linkedin",
       "whatsapp",
+      // services-specific simple fields
+      "contact_email",
     ]) {
       if (key in body) {
         // For optional text fields, convert empty strings to undefined
@@ -214,6 +249,14 @@ export async function PATCH(request: NextRequest) {
     if ('address' in body && typeof body.address === 'string') update.address = body.address;
     if ('placeId' in body && typeof body.placeId === 'string') update.placeId = body.placeId;
     if ('components' in body && body.components && typeof body.components === 'object') update.components = body.components;
+    // Arrays for services
+    if ('business_hours' in body && Array.isArray(body.business_hours)) update.business_hours = body.business_hours;
+    if ('services_gallery' in body) {
+      const normalized = normalizeGallery(body.services_gallery);
+      console.log('Gallery normalization:', { input: body.services_gallery, output: normalized });
+      update.services_gallery = normalized;
+    }
+    if ('service_rates' in body && Array.isArray(body.service_rates)) update.service_rates = body.service_rates;
     // Backfill email from session if not provided
     if (!('email' in body)) {
       update.email = (user as any).email || undefined;
@@ -241,9 +284,40 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Business name is already taken" }, { status: 409 });
       }
     }
+    // If client provided deleted_image_ids, attempt to delete them in Cloudinary in one go
+    if (Array.isArray(body.deleted_image_ids) && body.deleted_image_ids.length > 0) {
+      try {
+        const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env as any
+        if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET) {
+          cloudinary.config({ cloud_name: CLOUDINARY_CLOUD_NAME, api_key: CLOUDINARY_API_KEY, api_secret: CLOUDINARY_API_SECRET })
+          await cloudinary.api.delete_resources(body.deleted_image_ids)
+        }
+      } catch (e) {
+        console.error('Cloudinary bulk delete (vendor gallery) error:', e)
+        // Continue even if deletion fails; DB will still update services_gallery array
+      }
+    }
+
+    // Build Mongo update with $set/$unset to avoid replacement semantics
     update.updated_at = new Date();
-    const updated = await Vendor.findOneAndUpdate({ user_id: user.id }, update, { new: true }).lean();
+    const $set: Record<string, any> = {}
+    const $unset: Record<string, any> = {}
+    for (const [k, v] of Object.entries(update)) {
+      if (v === undefined) $unset[k] = ""; else $set[k] = v
+    }
+    const mongoUpdate: any = {}
+    if (Object.keys($set).length) mongoUpdate.$set = $set
+    if (Object.keys($unset).length) mongoUpdate.$unset = $unset
+
+    // Apply update then read fresh to avoid any edge cases with return doc
+    await Vendor.updateOne({ user_id: user.id }, mongoUpdate);
+    const updated = await Vendor.findOne({ user_id: user.id }).lean();
     if (!updated) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
+    
+    if ('services_gallery' in update) {
+      console.log('Gallery saved to DB (length):', Array.isArray((updated as any).services_gallery) ? (updated as any).services_gallery.length : 'undefined');
+    }
+    
     return NextResponse.json({ vendor: shapeId(updated) });
   } catch (err: any) {
     if (err && typeof err.message === 'string' && err.message.toLowerCase().includes('unauthorized')) {

@@ -14,7 +14,7 @@ type Step = {
   content: string
 }
 
-const STEPS: Step[] = [
+const BASE_STEPS: Step[] = [
   {
     id: "sidebar-dashboard",
     selector: '[data-tour="sidebar-dashboard"]',
@@ -53,6 +53,33 @@ const STEPS: Step[] = [
   },
 ]
 
+const SERVICE_STEPS: Step[] = [
+  {
+    id: "sidebar-about",
+    selector: '[data-tour="sidebar-about"]',
+    title: "About & Contact",
+    content: "Add your business description and contact details.",
+  },
+  {
+    id: "sidebar-hours",
+    selector: '[data-tour="sidebar-hours"]',
+    title: "Business Hours",
+    content: "Set your opening and closing times for each day.",
+  },
+  {
+    id: "sidebar-rates",
+    selector: '[data-tour="sidebar-rates"]',
+    title: "Services & Rates",
+    content: "List your services with clear pricing and units.",
+  },
+  {
+    id: "sidebar-gallery",
+    selector: '[data-tour="sidebar-gallery"]',
+    title: "Gallery",
+    content: "Showcase your work by uploading service images.",
+  },
+]
+
 function useElementRect(selector: string | null) {
   const [rect, setRect] = useState<DOMRect | null>(null)
 
@@ -88,9 +115,15 @@ export default function DashboardTour() {
   // Combine and order steps; on mobile group sidebar steps together
   const steps = useMemo<Step[]>(() => {
     const bannerEl = document.querySelector('[data-tour="approval-banner"]')
-    const base = [...STEPS]
-    const sidebar = base.filter(s => s.id.startsWith('sidebar-'))
-    const nonSidebar = base.filter(s => !s.id.startsWith('sidebar-'))
+    const base = [...BASE_STEPS]
+    // If service sidebar anchors exist, include service steps and remove product-only steps
+    const hasService = !!document.querySelector('[data-tour="sidebar-about"], [data-tour="sidebar-hours"], [data-tour="sidebar-rates"], [data-tour="sidebar-gallery"]')
+    const filteredBase = hasService
+      ? base.filter(s => !['sidebar-products','sidebar-requests','sidebar-analytics'].includes(s.id))
+      : base
+    const withService = hasService ? [...filteredBase, ...SERVICE_STEPS] : base
+    const sidebar = withService.filter(s => s.id.startsWith('sidebar-'))
+    const nonSidebar = withService.filter(s => !s.id.startsWith('sidebar-'))
     const headerSearch = nonSidebar.find(s => s.id === 'header-search')
     const others = nonSidebar.filter(s => s.id !== 'header-search')
 
@@ -103,7 +136,7 @@ export default function DashboardTour() {
         ...others,
       ]
     } else {
-      ordered = base
+      ordered = withService
     }
 
     if (bannerEl) {

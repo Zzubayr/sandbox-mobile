@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/lib/theme-context"
-import { Home, Package, ShoppingCart, Settings, BarChart3, HelpCircle, LogOut, Store, Sparkles } from "lucide-react"
+import { Home, Package, ShoppingCart, Settings, BarChart3, HelpCircle, LogOut, Store, Sparkles, Clock, Image as ImageIcon } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
@@ -42,9 +42,10 @@ const sidebarItems = [
 interface SidebarProps {
   className?: string
   storeName?: string
+  isService?: boolean
 }
 
-export function Sidebar({ className, storeName }: SidebarProps) {
+export function Sidebar({ className, storeName, isService }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { colors } = useTheme()
@@ -61,6 +62,17 @@ export function Sidebar({ className, storeName }: SidebarProps) {
     }
   }
 
+  const items = isService
+    ? [
+        { title: "Dashboard", href: "/dashboard", icon: Home },
+        { title: "About & Contact", href: "/dashboard/about", icon: Store },
+        { title: "Business Hours", href: "/dashboard/hours", icon: Clock },
+        { title: "Services & Rates", href: "/dashboard/rates", icon: Sparkles },
+        { title: "Gallery", href: "/dashboard/gallery", icon: ImageIcon },
+        { title: "Settings", href: "/dashboard/settings", icon: Settings },
+      ]
+    : sidebarItems;
+
   return (
     <div className={cn("pb-12 w-64 bg-white border-r border-slate-200", className)}>
       <div className="space-y-4 py-4">
@@ -75,13 +87,17 @@ export function Sidebar({ className, storeName }: SidebarProps) {
             </div>
           </div>
           <div className="space-y-1">
-            {sidebarItems.map((item) => {
+            {items.map((item) => {
               const dataAttr =
                 item.title === "Dashboard" ? { "data-tour": "sidebar-dashboard" } :
                 item.title === "Products" ? { "data-tour": "sidebar-products" } :
                 item.title === "Requests" ? { "data-tour": "sidebar-requests" } :
                 item.title === "Analytics" ? { "data-tour": "sidebar-analytics" } :
                 item.title === "Settings" ? { "data-tour": "sidebar-settings" } :
+                item.title === "About & Contact" ? { "data-tour": "sidebar-about" } :
+                item.title === "Business Hours" ? { "data-tour": "sidebar-hours" } :
+                item.title === "Services & Rates" ? { "data-tour": "sidebar-rates" } :
+                item.title === "Gallery" ? { "data-tour": "sidebar-gallery" } :
                 {}
               return (
                 <Button

@@ -8,9 +8,10 @@ import { Sidebar } from "./sidebar"
 
 interface MobileSidebarProps {
   storeName?: string
+  isService?: boolean
 }
 
-export function MobileSidebar({ storeName }: MobileSidebarProps) {
+export function MobileSidebar({ storeName, isService }: MobileSidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -26,7 +27,7 @@ export function MobileSidebar({ storeName }: MobileSidebarProps) {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="p-0 w-72 sm:w-80">
-        <Sidebar storeName={storeName} className="border-0" />
+        <Sidebar storeName={storeName} className="border-0" isService={isService} />
       </SheetContent>
     </Sheet>
   )

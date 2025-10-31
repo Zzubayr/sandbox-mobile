@@ -40,14 +40,15 @@ export default function DashboardLayout({ children, userEmail, vendor }: Dashboa
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
-        <Sidebar storeName={vendor?.store_name} />
+        <Sidebar storeName={vendor?.store_name} isService={vendor?.business_type === 'services'} />
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header
           title="Dashboard"
           userEmail={userEmail}
-          mobileSidebar={<MobileSidebar storeName={vendor?.store_name} />}
+          isService={vendor?.business_type === 'services'}
+          mobileSidebar={<MobileSidebar storeName={vendor?.store_name} isService={vendor?.business_type === 'services'} />}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100">
           {/* Approval Status Banner */}

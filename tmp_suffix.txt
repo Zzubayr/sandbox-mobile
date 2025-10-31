@@ -1,0 +1,7 @@
+flex items-center gap-2 md:gap-4">
+            {/* Desktop Search */}
+            <div 
+              className={`relative hidden md:block cursor-pointer ${isService ? 'hidden' : ''}`}
+              onClick={handleSearchClick}
+            >
+              <Search className="absolute left-2.5 top-2.

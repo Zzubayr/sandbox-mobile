@@ -32,9 +32,10 @@ interface HeaderProps {
   title: string;
   userEmail?: string;
   mobileSidebar?: React.ReactNode;
+  isService?: boolean;
 }
 
-export function Header({ title, userEmail, mobileSidebar }: HeaderProps) {
+export function Header({ title, userEmail, mobileSidebar, isService }: HeaderProps) {
   const router = useRouter();
   const { openSearch } = useSpotlightSearch();
 
@@ -126,18 +127,37 @@ export function Header({ title, userEmail, mobileSidebar }: HeaderProps) {
                 <Store className="mr-2 h-4 w-4" />
                 Dashboard
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => router.push("/dashboard/products")}
-              >
-                <Package className="mr-2 h-4 w-4" />
-                Products
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => router.push("/dashboard/requests")}
-              >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Requests
-              </DropdownMenuItem>
+              {isService ? (
+                <>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/about")}>
+                    <Store className="mr-2 h-4 w-4" />
+                    About & Contact
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/hours")}>
+                    <Store className="mr-2 h-4 w-4" />
+                    Business Hours
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/rates")}>
+                    <Store className="mr-2 h-4 w-4" />
+                    Services & Rates
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/gallery")}>
+                    <Package className="mr-2 h-4 w-4" />
+                    Gallery
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/products")}>
+                    <Package className="mr-2 h-4 w-4" />
+                    Products
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/requests")}>
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Requests
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => router.push("/dashboard/settings")}
