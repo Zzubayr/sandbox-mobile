@@ -6,6 +6,7 @@ import Vendor from "@/lib/db/models/vendor";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Package, ShoppingCart, BarChart3, Settings, Store, Clock, Sparkles, Image as ImageIcon, ExternalLink } from "lucide-react";
+import DashboardContent from "@/components/dashboard/dashboard-content";
 
 export default async function DashboardIndex() {
   try {
@@ -38,24 +39,8 @@ export default async function DashboardIndex() {
       )
     }
 
-    // Product vendor quick links
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Manage your catalog and requests</p>
-          </div>
-          <Button asChild variant="outline"><Link href={storePath} target="_blank"><ExternalLink className="w-4 h-4 mr-2" />Preview Store</Link></Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Package className="w-4 h-4" />Products</CardTitle><CardDescription>Manage your product catalog</CardDescription></CardHeader><CardContent><Button asChild><Link href="/dashboard/products">Open</Link></Button></CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Requests</CardTitle><CardDescription>Track customer requests</CardDescription></CardHeader><CardContent><Button asChild><Link href="/dashboard/requests">Open</Link></Button></CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="w-4 h-4" />Analytics</CardTitle><CardDescription>Insights and performance</CardDescription></CardHeader><CardContent><Button asChild><Link href="/dashboard/analytics">Open</Link></Button></CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Settings className="w-4 h-4" />Settings</CardTitle><CardDescription>Branding, logo, theme and more</CardDescription></CardHeader><CardContent><Button asChild variant="secondary"><Link href="/dashboard/settings">Open</Link></Button></CardContent></Card>
-        </div>
-      </div>
-    )
+    // Product vendor rich dashboard content
+    return <DashboardContent />
   } catch {
     redirect("/auth/login?next=/dashboard");
   }
