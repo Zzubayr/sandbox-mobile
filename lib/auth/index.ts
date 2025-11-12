@@ -15,10 +15,14 @@ const client = (mongoose.connection as any).getClient?.();
 // Outbound email (Resend)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
+const resolvedBaseURL =
+  process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const cookieDomain = process.env.BETTER_AUTH_COOKIE_DOMAIN || undefined;
+
 export const auth = betterAuth({
   database: client ? mongodbAdapter(db, { client }) : mongodbAdapter(db),
   // CRITICAL: baseURL is required for generating valid email verification and password reset links
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  baseURL: resolvedBaseURL,
   // CRITICAL: secret is required for signing tokens (password reset, email verification, etc.)
   secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET,
   // Ensure Better Auth trusts your app origins for redirects and CSRF
@@ -26,6 +30,13 @@ export const auth = betterAuth({
     process.env.NEXT_PUBLIC_SITE_URL || '',
     process.env.BETTER_AUTH_URL || '',
   ].filter(Boolean),
+  advanced: {
+    cookies: {
+      sameSite: 'none',
+      secure: resolvedBaseURL.startsWith('https://'),
+      domain: cookieDomain,
+    },
+  },
   emailAndPassword: {
     enabled: true,
     // Do NOT require verification; sign in immediately on signup
