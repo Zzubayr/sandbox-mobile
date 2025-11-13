@@ -142,7 +142,7 @@ export function AdminSidebar({ isOpen, onClose, isSuperAdmin }: AdminSidebarProp
         </Button>
         <div className="text-xs text-gray-500 text-center">
           <p>Admin Dashboard v1.0</p>
-          <p className="mt-1">SoundCrate Platform</p>
+          <p className="mt-1">Ummah Square</p>
         </div>
         </div>
       </aside>
