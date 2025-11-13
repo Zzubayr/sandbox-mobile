@@ -1,16 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { authClient } from "@/lib/auth-client"
+import { Button } from "@/components/ui/button"
 import { 
   Users, 
   Shield, 
   Home,
-  Package,
-  ShoppingCart,
-  FileText,
-  X
+  X,
+  LogOut
 } from "lucide-react"
 
 const navigation = [
@@ -31,6 +31,21 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ isOpen, onClose, isSuperAdmin }: AdminSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => router.push('/auth/login'),
+        },
+      })
+    } catch {
+      router.push('/auth/login')
+    } finally {
+      onClose()
+    }
+  }
 
   return (
     <>
@@ -117,6 +132,14 @@ export function AdminSidebar({ isOpen, onClose, isSuperAdmin }: AdminSidebarProp
 
       {/* Footer */}
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          className="w-full justify-center mb-3"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
+        </Button>
         <div className="text-xs text-gray-500 text-center">
           <p>Admin Dashboard v1.0</p>
           <p className="mt-1">SoundCrate Platform</p>
