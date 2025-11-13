@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   title: 'Ummah Square - Multi-Vendor Marketplace',
   description: 'Create beautiful online catalogs for your business. Let customers browse and request products through WhatsApp.',
   generator: 'Ummah Square',
+  manifest: '/manifest.json',
+  themeColor: '#2B6DA9',
 }
 
 export default function RootLayout({
