@@ -22,6 +22,18 @@ import logo from "@/public/logo.svg";
 import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
 
+declare global {
+  interface Window {
+    median?: unknown;
+    Median?: unknown;
+  }
+}
+
+function detectMedianApp() {
+  if (typeof window === "undefined") return false;
+  return !!(window.median || window.Median);
+}
+
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,14 +44,23 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isMedianApp, setIsMedianApp] = useState(
-    () => typeof window !== "undefined" && !!window.median
-  );
+  const [isMedianApp, setIsMedianApp] = useState(() => detectMedianApp());
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.median) setIsMedianApp(true);
+    if (detectMedianApp()) {
+      setIsMedianApp(true);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (detectMedianApp()) {
+        setIsMedianApp(true);
+        clearInterval(interval);
+      }
+    }, 300);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleSignup = async (e: React.FormEvent) => {

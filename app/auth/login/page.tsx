@@ -16,7 +16,13 @@ import logo from "@/public/logo.svg"
 declare global {
   interface Window {
     median?: unknown
+    Median?: unknown
   }
+}
+
+function detectMedianApp(): boolean {
+  if (typeof window === "undefined") return false
+  return !!(window.median || window.Median)
 }
 
 export default function LoginPage() {
@@ -26,15 +32,22 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [isMedianApp, setIsMedianApp] = useState(
-    () => typeof window !== "undefined" && !!window.median
-  )
+  const [isMedianApp, setIsMedianApp] = useState(() => detectMedianApp())
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    if (window.median) {
+    if (detectMedianApp()) {
       setIsMedianApp(true)
+      return
     }
+
+    const interval = setInterval(() => {
+      if (detectMedianApp()) {
+        setIsMedianApp(true)
+        clearInterval(interval)
+      }
+    }, 300)
+
+    return () => clearInterval(interval)
   }, [])
 
   if (isMedianApp) {
