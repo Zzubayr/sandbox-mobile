@@ -1,7 +1,8 @@
 import { betterAuth } from 'better-auth';
-import { Resend } from 'resend';
 import { mongodbAdapter } from 'better-auth/adapters/mongodb';
+import { emailOTP } from 'better-auth/plugins/email-otp';
 import mongoose from 'mongoose';
+import { Resend } from 'resend';
 import { connectToDatabase } from '@/lib/db/connection';
 
 // Ensure Mongoose is connected before wiring the adapter
@@ -14,6 +15,41 @@ const client = (mongoose.connection as any).getClient?.();
 
 // Outbound email (Resend)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const mailFrom = process.env.MAIL_FROM || 'Ummah Square <no-reply@ummahsquare.com>';
+
+const otpPlugin = emailOTP({
+  otpLength: 6,
+  expiresIn: 5 * 60,
+  disableSignUp: true,
+  async sendVerificationOTP({ email, otp, type }) {
+    const purpose =
+      type === 'sign-in'
+        ? 'Sign in to Ummah Square'
+        : type === 'forget-password'
+        ? 'Reset your Ummah Square password'
+        : 'Verify your email';
+    const subject = `${otp} is your Ummah Square code`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6">
+        <p>${purpose}.</p>
+        <p style="font-size: 24px; font-weight: bold; letter-spacing: 8px">${otp}</p>
+        <p>This code will expire in 5 minutes. If you didn't request it, you can ignore this email.</p>
+      </div>
+    `;
+
+    if (!resend) {
+      console.warn(`[OTP] ${purpose} for ${email}: ${otp}`);
+      return;
+    }
+
+    await resend.emails.send({
+      from: mailFrom,
+      to: email,
+      subject,
+      html,
+    });
+  },
+});
 
 const resolvedBaseURL =
   process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
@@ -55,4 +91,5 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
+  plugins: [otpPlugin],
 });

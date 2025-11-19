@@ -1,17 +1,23 @@
 "use client"
 
 import type React from "react"
-import { authClient } from "@/lib/auth-client"
+import { MedianOtpLogin } from "@/components/auth/median-otp-login"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { authClient } from "@/lib/auth-client"
 import { toastHelpers } from "@/lib/toast-helpers"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import logo from "@/public/logo.svg"
 import Image from "next/image"
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Store, Shield } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
+import { ArrowRight, Eye, EyeOff, Lock, Mail, Shield, Store } from "lucide-react"
+import logo from "@/public/logo.svg"
+
+declare global {
+  interface Window {
+    median?: unknown
+  }
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -20,7 +26,18 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const router = useRouter()
+  const [isMedianApp, setIsMedianApp] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (window.median) {
+      setIsMedianApp(true)
+    }
+  }, [])
+
+  if (isMedianApp) {
+    return <MedianOtpLogin />
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -280,3 +297,5 @@ export default function LoginPage() {
     </div>
   )
 }
+
+
