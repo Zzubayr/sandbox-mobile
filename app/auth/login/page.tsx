@@ -26,7 +26,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [isMedianApp, setIsMedianApp] = useState(false)
+  const [isMedianApp, setIsMedianApp] = useState(
+    () => typeof window !== "undefined" && !!window.median
+  )
 
   useEffect(() => {
     if (typeof window === "undefined") return
