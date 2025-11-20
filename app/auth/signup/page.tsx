@@ -258,7 +258,7 @@ export default function SignupPage() {
                 <Input
                   id="name"
                   type="text"
-                  placeholder="My Awesome Store"
+                  placeholder="Full Name"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}

@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-purple-800">Total Revenue</p>
-                <p className="text-2xl font-bold text-purple-900">${analyticsData.totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-purple-900">₦{analyticsData.totalRevenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
               <DollarSign className="h-8 w-8 text-purple-600" />
             </div>
@@ -307,7 +307,7 @@ export default function AnalyticsPage() {
                 <span className="text-sm">Average Order Value</span>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-slate-400" />
-                  <span className="font-medium">${analyticsData.averageOrderValue.toFixed(2)}</span>
+                  <span className="font-medium">₦{analyticsData.averageOrderValue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
               
@@ -349,7 +349,7 @@ export default function AnalyticsPage() {
                       <span className="text-sm font-medium truncate">{item.product.title}</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-semibold">${item.revenue.toFixed(2)}</p>
+                      <p className="text-sm font-semibold">₦{item.revenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                       <p className="text-xs text-slate-500">{item.requestCount} requests</p>
                     </div>
                   </div>
@@ -384,7 +384,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm font-semibold">${month.revenue.toFixed(2)}</span>
+                  <span className="text-sm font-semibold">₦{month.revenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
             ))}
@@ -409,7 +409,7 @@ export default function AnalyticsPage() {
                   <div>
                     <p className="font-medium">{request.customer_name}</p>
                     <p className="text-sm text-slate-500">
-                      {request.request_items?.length || 0} items • ${request.total_amount}
+                      {request.request_items?.length || 0} items • ₦{request.total_amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div className="text-right">
@@ -425,7 +425,8 @@ export default function AnalyticsPage() {
                       {request.status}
                     </Badge>
                     <p className="text-xs text-slate-500 mt-1">
-                      {new Date(request.created_at).toLocaleDateString()}
+                      <div>{new Date(request.created_at).toLocaleDateString()}</div>
+                      <div>{new Date(request.created_at).toLocaleTimeString()}</div>
                     </p>
                   </div>
                 </div>

@@ -57,19 +57,19 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manage Users</h1>
-          <p className="text-gray-600">View and delete non-admin users</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Manage Users</h1>
+          <p className="text-gray-600 text-sm sm:text-base">View and delete non-admin users</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Input
             placeholder="Search by email or store name"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-72"
+            className="w-full sm:w-72"
           />
-          <Button variant="outline" onClick={() => load(query.trim() || undefined)} disabled={loading}>
+          <Button variant="outline" onClick={() => load(query.trim() || undefined)} disabled={loading} className="w-full sm:w-auto">
             {loading ? "Loading..." : "Refresh"}
           </Button>
         </div>

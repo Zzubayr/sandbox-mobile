@@ -200,7 +200,7 @@ export default function DashboardContent() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">${stats.totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-purple-900">₦{stats.totalRevenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-purple-700">Completed requests</p>
           </CardContent>
         </Card>
@@ -297,7 +297,7 @@ export default function DashboardContent() {
                         </Badge>
                       </div>
                       <p className="text-sm text-slate-600">
-                        {request.request_items?.length || 0} items • ${request.total_amount.toFixed(2)}
+                        {request.request_items?.length || 0} items • ₦{request.total_amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">
                         {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
