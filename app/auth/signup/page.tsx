@@ -216,38 +216,6 @@ export default function SignupPage() {
     )
   }
 
-  // Redirect to login for Median app (signup not supported in app)
-  if (isMedianApp) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-[#EBF3FA] to-[#D6E7F5] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] -z-10" />
-        <div className="w-full max-w-md text-center">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-            <h2 className="text-2xl font-semibold text-slate-800 mb-4">Account Creation</h2>
-            <p className="text-slate-600 mb-6">
-              Account creation is not available in the mobile app. Please visit our website to create your vendor account.
-            </p>
-            <div className="space-y-3">
-              <a 
-                href="/auth/login" 
-                className="block w-full h-12 bg-gradient-to-r from-[#2B6DA9] to-[#20527F] hover:from-[#20527F] hover:to-[#183D5F] text-white font-medium rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
-              >
-                Sign In Instead
-              </a>
-              <a 
-                href="https://www.ummahsquare.com.ng/auth/signup" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full h-12 border-2 border-[#2B6DA9] text-[#2B6DA9] hover:bg-[#2B6DA9] hover:text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center"
-              >
-                Create Account on Web
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-[#EBF3FA] to-[#D6E7F5] flex items-center justify-center p-4">
