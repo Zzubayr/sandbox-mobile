@@ -214,16 +214,16 @@ export default function NewProductPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" asChild>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <Button variant="ghost" asChild className="self-start">
           <Link href="/dashboard/products">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Products
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Add New Product</h1>
-          <p className="text-muted-foreground">Create a new product for your store</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Add New Product</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Create a new product for your store</p>
         </div>
       </div>
 
@@ -330,7 +330,7 @@ export default function NewProductPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex-1">
                     <Select
                       value={formData.category_id}
@@ -348,12 +348,12 @@ export default function NewProductPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="button" variant="outline" onClick={() => setAddingCategory((s) => !s)}>
+                  <Button type="button" variant="outline" onClick={() => setAddingCategory((s) => !s)} className="w-full sm:w-auto">
                     {addingCategory ? 'Cancel' : '+ Add Category'}
                   </Button>
                 </div>
                 {addingCategory && (
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
                     <Input
                       placeholder="New category name"
                       value={newCategoryName}
@@ -364,6 +364,7 @@ export default function NewProductPage() {
                           (document.getElementById('btn-create-category-new') as HTMLButtonElement)?.click();
                         }
                       }}
+                      className="flex-1"
                     />
                     <Button
                       id="btn-create-category-new"
@@ -391,6 +392,7 @@ export default function NewProductPage() {
                           setCatSaving(false)
                         }
                       }}
+                      className="w-full sm:w-auto"
                     >
                       {catSaving ? 'Creating…' : 'Create'}
                     </Button>
@@ -440,9 +442,9 @@ export default function NewProductPage() {
                         </button></Badge>
                     ))}
                   </div>
-                  <div className="flex gap-2">
-                    <Input placeholder="e.g., Red" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = '' } }} />
-                    <Button type="button" variant="outline" onClick={(e) => { const input = (e.currentTarget.parentElement?.querySelector('input')) as HTMLInputElement | null; if (input) { addColor(input.value); input.value = '' } }}>Add Color</Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input placeholder="e.g., Red" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = '' } }} className="flex-1" />
+                    <Button type="button" variant="outline" onClick={(e) => { const input = (e.currentTarget.parentElement?.querySelector('input')) as HTMLInputElement | null; if (input) { addColor(input.value); input.value = '' } }} className="w-full sm:w-auto">Add Color</Button>
                   </div>
                 </div>
 
@@ -460,16 +462,16 @@ export default function NewProductPage() {
                     })}
                   </div>
                   <div className="flex gap-2">
-                    <Input placeholder="Custom sizes (comma separated)" onKeyDown={(e) => { if (e.key==='Enter'){ e.preventDefault(); const vals = (e.target as HTMLInputElement).value.split(',').map(v=>v.trim()).filter(Boolean); vals.forEach(v=>toggleSize(v)); (e.target as HTMLInputElement).value='' } }} />
+                    <Input placeholder="Custom sizes (comma separated)" onKeyDown={(e) => { if (e.key==='Enter'){ e.preventDefault(); const vals = (e.target as HTMLInputElement).value.split(',').map(v=>v.trim()).filter(Boolean); vals.forEach(v=>toggleSize(v)); (e.target as HTMLInputElement).value='' } }} className="w-full" />
                   </div>
                 </div>
 
                 {/* Weight */}
                 <div className="mb-2">
                   <Label className="text-sm mb-2 block">Weight</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="e.g., 1.2" className="w-28" onChange={(e) => setWeight(e.target.value, (document.getElementById('weight-unit') as HTMLSelectElement)?.value || 'kg')} />
-                    <select id="weight-unit" className="border rounded px-2" onChange={(e) => setWeight(((document.querySelector('#weight-unit') as HTMLSelectElement) && (document.querySelector<HTMLInputElement>('input[placeholder="e.g., 1.2"]')?.value || ''))!, e.target.value)}>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input placeholder="e.g., 1.2" className="flex-1 sm:w-28" onChange={(e) => setWeight(e.target.value, (document.getElementById('weight-unit') as HTMLSelectElement)?.value || 'kg')} />
+                    <select id="weight-unit" className="border rounded px-2 w-full sm:w-auto" onChange={(e) => setWeight(((document.querySelector('#weight-unit') as HTMLSelectElement) && (document.querySelector<HTMLInputElement>('input[placeholder="e.g., 1.2"]')?.value || ''))!, e.target.value)}>
                       <option value="kg">kg</option>
                       <option value="g">g</option>
                       <option value="lb">lb</option>

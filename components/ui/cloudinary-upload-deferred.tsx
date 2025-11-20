@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Upload, X, Image as ImageIcon } from "lucide-react"
@@ -20,16 +20,32 @@ interface Props {
   className?: string
 }
 
+const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+
 export default function CloudinaryUploadDeferred({
   onSelect,
   onRemove,
   pending,
   maxFiles = 5,
   label = "Select Images",
-  description = "Preview now; upload on save.",
+  description = "Preview now; upload on save. (JPG, PNG, WebP, GIF up to 5MB each)",
   className = "",
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Cleanup blob URLs on component unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      pending.forEach((p) => {
+        try {
+          URL.revokeObjectURL(p.previewUrl)
+        } catch (e) {
+          // Ignore errors if URL was already revoked
+        }
+      })
+    }
+  }, [pending])
 
   const openDialog = () => inputRef.current?.click()
 
@@ -37,7 +53,21 @@ export default function CloudinaryUploadDeferred({
     const files = Array.from(e.target.files || [])
     if (!files.length) return
     const remaining = Math.max(0, maxFiles - pending.length)
-    const take = files.slice(0, remaining)
+    const take = files.slice(0, remaining).filter((file) => {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        alert('Please select valid image files (JPG, PNG, WebP, or GIF).')
+        return false
+      }
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        alert('Each image must be smaller than 5MB.')
+        return false
+      }
+      return true
+    })
+    if (take.length === 0) {
+      if (inputRef.current) inputRef.current.value = ""
+      return
+    }
     const mapped: PendingFile[] = take.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }))
     onSelect(mapped)
     if (inputRef.current) inputRef.current.value = ""
@@ -45,7 +75,7 @@ export default function CloudinaryUploadDeferred({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <input
           ref={inputRef}
           type="file"
@@ -55,11 +85,11 @@ export default function CloudinaryUploadDeferred({
           multiple
           disabled={pending.length >= maxFiles}
         />
-        <Button onClick={openDialog} variant="outline">
+        <Button onClick={openDialog} variant="outline" className="w-full sm:w-auto">
           <Upload className="w-4 h-4 mr-2" />
           {label}
         </Button>
-        <span className="text-sm text-slate-600">{pending.length}/{maxFiles} images</span>
+        <span className="text-sm text-slate-600 text-center sm:text-left">{pending.length}/{maxFiles} images</span>
       </div>
 
       <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded-lg border">{description}</div>
@@ -75,7 +105,7 @@ export default function CloudinaryUploadDeferred({
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                      className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8"
                       onClick={() => onRemove(p.previewUrl)}
                     >
                       <X className="h-4 w-4" />
@@ -109,4 +139,3 @@ export default function CloudinaryUploadDeferred({
     </div>
   )
 }
-

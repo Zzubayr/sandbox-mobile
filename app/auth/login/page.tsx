@@ -32,23 +32,57 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const [isMedianApp, setIsMedianApp] = useState(() => detectMedianApp())
+  const [isMedianApp, setIsMedianApp] = useState<boolean | null>(null) // null = checking, true = median, false = web
+  const [isCheckingMedian, setIsCheckingMedian] = useState(true)
 
   useEffect(() => {
-    if (detectMedianApp()) {
-      setIsMedianApp(true)
-      return
+    const initializeAuth = async () => {
+      // Check for existing session first
+      try {
+        const { data: session } = await authClient.getSession()
+        if (session?.user) {
+          // User is already logged in, redirect to dashboard
+          window.location.href = "/auth/post-login"
+          return
+        }
+      } catch (error) {
+        // Session check failed, continue with login flow
+        console.log("Session check failed:", error)
+      }
+
+      // Check immediately on mount for Median
+      const initialCheck = detectMedianApp()
+      if (initialCheck) {
+        setIsMedianApp(true)
+        setIsCheckingMedian(false)
+        return
+      }
+
+      // If not detected immediately, wait a bit for Median to initialize
+      const timeout = setTimeout(() => {
+        const finalCheck = detectMedianApp()
+        setIsMedianApp(finalCheck)
+        setIsCheckingMedian(false)
+      }, 500) // Give Median 500ms to initialize
+
+      return () => clearTimeout(timeout)
     }
 
-    const interval = setInterval(() => {
-      if (detectMedianApp()) {
-        setIsMedianApp(true)
-        clearInterval(interval)
-      }
-    }, 300)
-
-    return () => clearInterval(interval)
+    initializeAuth()
   }, [])
+
+  // Show loading state while checking for Median
+  if (isCheckingMedian) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-[#EBF3FA] to-[#D6E7F5] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] -z-10" />
+        <div className="flex items-center gap-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-[#2B6DA9] border-t-transparent" />
+          <span className="text-slate-600">Loading...</span>
+        </div>
+      </div>
+    )
+  }
 
   if (isMedianApp) {
     return <MedianOtpLogin />
