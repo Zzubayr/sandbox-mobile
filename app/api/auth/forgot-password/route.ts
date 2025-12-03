@@ -12,34 +12,20 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Call Better Auth's API handler directly
-        const forgetPasswordRequest = new Request(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/forget-password/send-otp`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email }),
+        // Call Better Auth's server-side API to send OTP for password reset
+        const result = await auth.api.sendVerificationOTP({
+            email,
+            type: 'forget-password',
         });
-
-        const response = await auth.handler(forgetPasswordRequest);
-
-        if (!response.ok) {
-            const error = await response.text();
-            console.error('Forget password error:', error);
-            return NextResponse.json(
-                { error: error || 'Failed to send reset code' },
-                { status: response.status }
-            );
-        }
 
         return NextResponse.json({
             success: true,
-            message: 'If an account exists with this email, a reset code has been sent.'
+            message: 'A reset code has been sent to your email.'
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Forgot password error:', error);
         return NextResponse.json(
-            { error: 'Failed to process request' },
+            { error: error?.message || 'Failed to send reset code' },
             { status: 500 }
         );
     }

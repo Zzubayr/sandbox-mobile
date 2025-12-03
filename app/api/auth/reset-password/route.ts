@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import mongoose from 'mongoose';
 
 export async function POST(req: NextRequest) {
     try {
@@ -20,38 +21,38 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Call Better Auth's API handler directly
-        const verifyRequest = new Request(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/forget-password/verify-otp`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email,
-                otp,
-                password: newPassword
-            }),
+        // Verify OTP first
+        const verifyResult = await auth.api.verifyEmailOtp({
+            email,
+            otp,
+            type: 'forget-password',
         });
 
-        const response = await auth.handler(verifyRequest);
-
-        if (!response.ok) {
-            const error = await response.text();
-            console.error('Verify OTP error:', error);
+        if (!verifyResult) {
             return NextResponse.json(
-                { error: error || 'Failed to reset password' },
-                { status: response.status }
+                { error: 'Invalid or expired OTP code' },
+                { status: 400 }
             );
         }
+
+        // Update password in database
+        const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema({}, { strict: false }));
+        const bcrypt = await import('bcryptjs');
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        await User.updateOne(
+            { email: email.toLowerCase() },
+            { $set: { password: hashedPassword } }
+        );
 
         return NextResponse.json({
             success: true,
             message: 'Password has been reset successfully'
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Reset password error:', error);
         return NextResponse.json(
-            { error: 'Failed to process request' },
+            { error: error?.message || 'Failed to reset password' },
             { status: 500 }
         );
     }

@@ -34,13 +34,17 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      // Use Better Auth's forgetPassword.emailOTP method
-      const { data, error } = await authClient.forgetPassword.emailOTP({
-        email,
+      // Call our custom API route
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) {
-        throw new Error(error.message || "Failed to send reset code");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send reset code");
       }
 
       toastHelpers.success(
@@ -85,15 +89,17 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      // Use Better Auth's resetPassword method with OTP
-      const { data, error } = await authClient.resetPassword({
-        email,
-        otp,
-        newPassword,
+      // Call our custom API route
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, newPassword }),
       });
 
-      if (error) {
-        throw new Error(error.message || "Failed to reset password");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reset password");
       }
 
       toastHelpers.success(
