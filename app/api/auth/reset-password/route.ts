@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
-import mongoose from 'mongoose';
 
 export async function POST(req: NextRequest) {
     try {
@@ -21,29 +19,26 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Verify OTP first
-        const verifyResult = await auth.api.verifyEmailOtp({
-            email,
-            otp,
-            type: 'forget-password',
+        // Forward to Better Auth's email-otp verify endpoint with password parameter
+        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/email-otp/verify-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email.trim().toLowerCase(),
+                otp,
+                password: newPassword
+            }),
         });
 
-        if (!verifyResult) {
+        if (!response.ok) {
+            const error = await response.text();
             return NextResponse.json(
-                { error: 'Invalid or expired OTP code' },
-                { status: 400 }
+                { error: error || 'Invalid or expired OTP code' },
+                { status: response.status }
             );
         }
-
-        // Update password in database
-        const User = mongoose.models.User || mongoose.model('User', new mongoose.Schema({}, { strict: false }));
-        const bcrypt = await import('bcryptjs');
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        await User.updateOne(
-            { email: email.toLowerCase() },
-            { $set: { password: hashedPassword } }
-        );
 
         return NextResponse.json({
             success: true,

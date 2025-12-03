@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,11 +11,25 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Call Better Auth's server-side API to send OTP for password reset
-        const result = await auth.api.sendVerificationOTP({
-            email,
-            type: 'forget-password',
+        // Forward to Better Auth's email-otp endpoint with forget-password type
+        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/email-otp/send-verification-otp`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email.trim().toLowerCase(),
+                type: 'forget-password'
+            }),
         });
+
+        if (!response.ok) {
+            const error = await response.text();
+            return NextResponse.json(
+                { error: error || 'Failed to send reset code' },
+                { status: response.status }
+            );
+        }
 
         return NextResponse.json({
             success: true,
