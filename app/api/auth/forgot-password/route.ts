@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authClient } from '@/lib/auth-client';
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,9 +11,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Use Better Auth's email OTP to send password reset code
-        // The OTP plugin will handle sending the email with the code
-        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/forget-password`, {
+        // Use Better Auth's email OTP forget-password endpoint
+        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/forget-password/send-otp`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

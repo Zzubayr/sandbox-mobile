@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Use Better Auth's reset password endpoint with OTP verification
-        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/reset-password`, {
+        // Use Better Auth's OTP verification endpoint for password reset
+        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/forget-password/verify-otp`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
             body: JSON.stringify({
                 email,
                 otp,
-                newPassword
+                password: newPassword
             }),
         });
 
