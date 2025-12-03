@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toastHelpers } from "@/lib/toast-helpers";
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, ArrowRight, ArrowLeft, Check, Eye, EyeOff } from "lucide-react";
@@ -33,20 +34,19 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+      // Use Better Auth OTP plugin's sendVerificationOtp method for password reset
+      const { data, error } = await authClient.emailOtp.sendVerificationOtp({
+        email,
+        type: "forget-password",
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to send reset code");
+      if (error) {
+        throw new Error(error.message || "Failed to send reset code");
       }
 
       toastHelpers.success(
         "Code Sent",
-        "If an account exists with this email, a reset code has been sent."
+        "A reset code has been sent to your email."
       );
       setStep("verify");
     } catch (err: any) {
@@ -86,15 +86,15 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, newPassword }),
+      // Use Better Auth OTP plugin's verifyEmail method with password for reset
+      const { data, error } = await authClient.emailOtp.verifyEmail({
+        email,
+        otp,
+        password: newPassword,
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to reset password");
+      if (error) {
+        throw new Error(error.message || "Failed to reset password");
       }
 
       toastHelpers.success(
