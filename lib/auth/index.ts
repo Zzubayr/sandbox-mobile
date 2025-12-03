@@ -26,8 +26,8 @@ const otpPlugin = emailOTP({
       type === 'sign-in'
         ? 'Sign in to Ummah Square'
         : type === 'forget-password'
-        ? 'Reset your Ummah Square password'
-        : 'Verify your email';
+          ? 'Reset your Ummah Square password'
+          : 'Verify your email';
     const subject = `${otp} is your Ummah Square code`;
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6">
@@ -77,8 +77,6 @@ export const auth = betterAuth({
     enabled: true,
     // Do NOT require verification; sign in immediately on signup
     requireEmailVerification: false,
-    // Disable password reset emails entirely
-    sendResetPassword: undefined as any,
   },
   // Disable verification emails entirely
   emailVerification: {
