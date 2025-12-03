@@ -34,10 +34,9 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      // Use Better Auth OTP plugin's sendVerificationOtp method for password reset
-      const { data, error } = await authClient.emailOtp.sendVerificationOtp({
+      // Use Better Auth's forgetPassword.emailOTP method
+      const { data, error } = await authClient.forgetPassword.emailOTP({
         email,
-        type: "forget-password",
       });
 
       if (error) {
@@ -86,11 +85,11 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      // Use Better Auth OTP plugin's verifyEmail method with password for reset
-      const { data, error } = await authClient.emailOtp.verifyEmail({
+      // Use Better Auth's resetPassword method with OTP
+      const { data, error } = await authClient.resetPassword({
         email,
         otp,
-        password: newPassword,
+        newPassword,
       });
 
       if (error) {
