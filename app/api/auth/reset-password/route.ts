@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Forward to Better Auth's email-otp verify endpoint with password parameter
-        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/email-otp/verify-email`, {
+        // Forward to Better Auth's dedicated reset-password endpoint so the OTP is validated against the forget-password store
+        const response = await fetch(`${process.env.BETTER_AUTH_URL || 'http://localhost:3000'}/api/auth/email-otp/reset-password`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -33,7 +33,13 @@ export async function POST(req: NextRequest) {
         });
 
         if (!response.ok) {
-            const error = await response.text();
+            let error: string | undefined;
+            try {
+                const data = await response.json();
+                error = data?.error || data?.message;
+            } catch {
+                error = await response.text();
+            }
             return NextResponse.json(
                 { error: error || 'Invalid or expired OTP code' },
                 { status: response.status }
