@@ -44,6 +44,12 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(value)
 }
 
+function formatDateTime(value?: string) {
+  if (!value) return "—"
+  const date = new Date(value)
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+}
+
 export function AdminProducts({ initialProducts = [] as ProductWithVendor[] }) {
   const router = useRouter()
   const [products, setProducts] = useState<ProductWithVendor[]>(initialProducts)
@@ -221,7 +227,7 @@ export function AdminProducts({ initialProducts = [] as ProductWithVendor[] }) {
                   <Store className="h-4 w-4 text-slate-400" />
                   <span>{product.vendor?.store_name || "Unknown vendor"}</span>
                 </div>
-                <span>{product.created_at ? new Date(product.created_at).toLocaleDateString() : "—"}</span>
+                <span>{formatDateTime(product.created_at)}</span>
               </div>
             </CardContent>
           </Card>
@@ -286,9 +292,7 @@ export function AdminProducts({ initialProducts = [] as ProductWithVendor[] }) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm text-slate-700">
-                        {product.created_at ? new Date(product.created_at).toLocaleDateString() : "—"}
-                      </div>
+                      <div className="text-sm text-slate-700">{formatDateTime(product.created_at)}</div>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost">
