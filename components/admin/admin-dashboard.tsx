@@ -132,18 +132,25 @@ export function AdminDashboard({ initialStats }: AdminDashboardProps) {
         </Card>
 
         {/* Total Products */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentStats.products?.total || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {currentStats.products?.active || 0} active products
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/admin/products" className="block group">
+          <Card className="transition border border-transparent group-hover:border-blue-200 group-hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                Total Products
+                <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  View all
+                </span>
+              </CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{currentStats.products?.total || 0}</div>
+              <p className="text-xs text-muted-foreground">
+                {currentStats.products?.active || 0} active products
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Total Requests */}
         <Card>

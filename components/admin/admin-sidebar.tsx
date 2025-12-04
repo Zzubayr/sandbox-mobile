@@ -10,17 +10,20 @@ import {
   Shield, 
   Home,
   X,
-  LogOut
+  LogOut,
+  Package
 } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: Home },
   { name: "Vendor Management", href: "/admin/vendors", icon: Users },
+  { name: "Products", href: "/admin/products", icon: Package },
   { name: "Admin Management", href: "/admin/admins", icon: Shield },
 ]
 
 const quickStats = [
   { name: "Total Vendors", href: "/admin/vendors", icon: Users },
+  { name: "All Products", href: "/admin/products", icon: Package },
 ]
 
 interface AdminSidebarProps {
