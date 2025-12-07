@@ -49,29 +49,34 @@ export function AdminProductDetail({ product }: { product: ProductWithVendor }) 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => router.push("/admin/products")}>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 min-w-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={() => router.push("/admin/products")}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Products
           </Button>
-          <div>
+          <div className="min-w-0 space-y-1">
             <p className="inline-flex items-center gap-2 text-xs font-medium text-blue-700 bg-blue-50 px-3 py-1 rounded-full">
               <Package className="h-3.5 w-3.5" />
               Product Detail
             </p>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">{product.title}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{product.title}</h1>
             <p className="text-sm text-slate-600 line-clamp-2">{product.description}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge className={statusBadge[product.status] || "bg-slate-100 text-slate-700"}>{product.status}</Badge>
           <Badge variant="outline">{product.category_id ? `Category: ${product.category_id}` : "Uncategorised"}</Badge>
         </div>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Price</CardTitle>
@@ -116,7 +121,7 @@ export function AdminProductDetail({ product }: { product: ProductWithVendor }) 
             </CardHeader>
             <CardContent className="space-y-4">
               {imageSources.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                   {imageSources.slice(0, 6).map((src, idx) => (
                     <div key={`${src}-${idx}`} className="relative w-full overflow-hidden rounded-lg border bg-slate-50">
                       <Image
@@ -231,7 +236,7 @@ export function AdminProductDetail({ product }: { product: ProductWithVendor }) 
 
               <div className="flex flex-col gap-2">
                 {product.vendor?.id && (
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="w-full">
                     <Link href={`/admin/vendors/${product.vendor.id}`}>
                       <Eye className="h-4 w-4 mr-2" />
                       View Vendor Profile
@@ -239,7 +244,7 @@ export function AdminProductDetail({ product }: { product: ProductWithVendor }) 
                   </Button>
                 )}
                 {product.vendor?.store_slug && (
-                  <Button asChild variant="secondary">
+                  <Button asChild variant="secondary" className="w-full">
                     <Link href={`/store/${product.vendor.store_slug}`} target="_blank">
                       <Store className="h-4 w-4 mr-2" />
                       Open Storefront
@@ -260,11 +265,11 @@ export function AdminProductDetail({ product }: { product: ProductWithVendor }) 
             <CardContent className="space-y-2 text-sm text-slate-700">
               <p>
                 <span className="text-slate-500">Product ID:</span>{" "}
-                <span className="font-mono text-xs">{product.id}</span>
+                <span className="font-mono text-xs break-all">{product.id}</span>
               </p>
               <p>
                 <span className="text-slate-500">Vendor ID:</span>{" "}
-                <span className="font-mono text-xs">{product.vendor_id}</span>
+                <span className="font-mono text-xs break-all">{product.vendor_id}</span>
               </p>
               {product.weight && (
                 <p>
