@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toastHelpers } from "@/lib/toast-helpers"
 import { generateProductPoster } from "@/lib/poster-generator"
 import { toImageUrl } from "@/lib/image-utils"
@@ -21,51 +21,35 @@ export function useProductShare({ product, vendor }: UseProductShareProps) {
     return `${window.location.origin}/store/${vendor.store_slug}/product/${product.id}`
   }
 
-  // Pre-generate poster so share stays within user gesture
-  useEffect(() => {
-    if (typeof window === "undefined" || !product || !vendor) {
-      setPosterFile(null)
-      return
-    }
+  const ensurePosterFile = async () => {
+    if (posterFile) return posterFile
 
-    let cancelled = false
-    const prepare = async () => {
-      setIsGenerating(true)
-      try {
-        const productImageUrl =
-          product.images && product.images.length > 0
-            ? toImageUrl(product.images[0] as any) || ""
-            : ""
+    setIsGenerating(true)
+    try {
+      const productImageUrl =
+        product.images && product.images.length > 0
+          ? toImageUrl(product.images[0] as any) || ""
+          : ""
 
-        if (!productImageUrl) {
-          throw new Error("No product image available")
-        }
-
-        const blob = await generateProductPoster({
-          productImage: productImageUrl,
-          productTitle: product.title,
-          productDescription: product.description || "",
-          businessName: vendor.store_name,
-          logoUrl: "/logo.png",
-        })
-
-        if (cancelled) return
-        setPosterFile(new File([blob], `${product.title || "product"}.png`, { type: "image/png" }))
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Prepare share image error:", err)
-          setPosterFile(null)
-        }
-      } finally {
-        if (!cancelled) setIsGenerating(false)
+      if (!productImageUrl) {
+        throw new Error("No product image available")
       }
-    }
 
-    prepare()
-    return () => {
-      cancelled = true
+      const blob = await generateProductPoster({
+        productImage: productImageUrl,
+        productTitle: product.title,
+        productDescription: product.description || "",
+        businessName: vendor.store_name,
+        logoUrl: "/logo.png",
+      })
+
+      const file = new File([blob], `${product.title || "product"}.png`, { type: "image/png" })
+      setPosterFile(file)
+      return file
+    } finally {
+      setIsGenerating(false)
     }
-  }, [product, vendor])
+  }
 
   const shareLink = async () => {
     const url = getShareUrl()
@@ -90,19 +74,19 @@ export function useProductShare({ product, vendor }: UseProductShareProps) {
 
   const shareImage = async () => {
     if (typeof window === "undefined") return
-    if (!posterFile) {
-      toastHelpers.saveError("Preparing image, please try again in a moment")
+    const file = posterFile || (await ensurePosterFile())
+    if (!file) {
+      toastHelpers.saveError("Could not prepare image to share")
       return
     }
-
     setIsSharing(true)
 
     try {
       const productUrl = getShareUrl()
 
-      if (navigator.canShare && navigator.canShare({ files: [posterFile] })) {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          files: [posterFile],
+          files: [file],
           title: product.title,
           text: `${product.description || product.title}\n\n${productUrl}`,
         })
@@ -113,19 +97,28 @@ export function useProductShare({ product, vendor }: UseProductShareProps) {
           url: productUrl,
         })
       } else {
+        const blobUrl = URL.createObjectURL(file)
         const link = document.createElement("a")
-        link.href = URL.createObjectURL(posterFile)
+        link.href = blobUrl
         link.download = `${product.title || "product"}.png`
+        link.style.display = "none"
         document.body.appendChild(link)
         link.click()
         link.remove()
-        URL.revokeObjectURL(link.href)
+
+        // As an extra fallback for environments that block downloads (e.g., some in-app browsers),
+        // open the image in a new tab so the user can save/share manually.
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 4000)
 
         try {
           await navigator.clipboard.writeText(productUrl)
           toastHelpers.success("Image downloaded • Link copied")
         } catch {
           toastHelpers.success("Image downloaded for sharing")
+        }
+
+        if (typeof window !== "undefined" && !navigator.share) {
+          window.open(blobUrl, "_blank", "noopener,noreferrer")
         }
       }
     } catch (err) {
