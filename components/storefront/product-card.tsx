@@ -4,7 +4,7 @@ import type React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Heart, ShoppingCart, Package, Eye } from "lucide-react"
+import { Heart, ShoppingCart, Package, Share2, Link as LinkIcon, Image as ImageIcon, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
@@ -14,7 +14,7 @@ import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { cn } from "@/lib/utils"
 import { useProductShare } from "@/hooks/use-product-share"
-import { Share2, Loader2 } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface ProductCardProps {
   product: Product
@@ -26,9 +26,8 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
   const colors = getThemeColors(vendor.theme_color)
   const { dispatch } = useCart()
   const { dispatch: wishlistDispatch, state: wishlistState } = useWishlist()
+  const shareProps = useProductShare({ product, vendor })
   
-  const { shareImage, isSharing, isGenerating } = useProductShare({ product, vendor })
-
   const rawUnit = (product as any)?.attributes?.price_unit || product.unit
   const unitLabel = (() => {
     switch (rawUnit) {
@@ -88,7 +87,8 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
             </div>
           )}
 
-          {/* Overlays */}
+  
+        {/* Overlays */}
           {isOutOfStock && (
              <div className="absolute inset-x-0 bottom-4 text-center z-10">
                <span className="inline-block px-3 py-1 bg-slate-900/90 text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-md backdrop-blur-md">
@@ -97,7 +97,67 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
              </div>
           )}
 
-           {/* DESKTOP ONLY: Quick Actions (Slide up on hover) */}
+          {/* Share / Wishlist */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-20">
+            {/* Wishlist Button */}
+            <button
+              onClick={handleWishlistToggle}
+              className="p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 group/heart"
+            >
+              <Heart 
+                className={cn(
+                  "h-4 w-4 transition-colors", 
+                  isInWishlist ? "text-red-500 fill-red-500" : "text-slate-600 group-hover/heart:text-red-500"
+                )} 
+              />
+            </button>
+
+            {/* Share Button */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  className="p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 group/share disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {shareProps.isGenerating ? (
+                    <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
+                  ) : (
+                    <Share2 className="h-4 w-4 text-slate-600 group-hover/share:text-slate-900" />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Share</DropdownMenuLabel>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    shareProps.shareLink()
+                  }}
+                  className="gap-2"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Share link
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    shareProps.shareImage()
+                  }}
+                  className="gap-2"
+                  disabled={shareProps.isSharing || shareProps.isGenerating}
+                >
+                  {shareProps.isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                  {shareProps.isSharing ? "Sharing..." : shareProps.isGenerating ? "Preparing..." : "Share image"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {/* DESKTOP ONLY: Quick Actions (Slide up on hover) */}
            {!isOutOfStock && (
              <div className="hidden md:block absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/60 to-transparent">
                  <Button 
@@ -110,35 +170,6 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
              </div>
            )}
 
-          {/* Wishlist Button */}
-          <button
-            onClick={handleWishlistToggle}
-            className="absolute top-3 right-3 p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 z-20 group/heart"
-          >
-            <Heart 
-              className={cn(
-                "h-4 w-4 transition-colors", 
-                isInWishlist ? "text-red-500 fill-red-500" : "text-slate-600 group-hover/heart:text-red-500"
-              )} 
-            />
-          </button>
-
-          {/* Share Button */}
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              shareImage()
-            }}
-            disabled={isSharing || isGenerating}
-            className="absolute top-14 right-3 p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 z-20 group/share disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isGenerating ? (
-              <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
-            ) : (
-              <Share2 className="h-4 w-4 text-slate-600 group-hover/share:text-slate-900" />
-            )}
-          </button>
         </div>
 
         {/* Content */}

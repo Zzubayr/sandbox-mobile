@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Heart, ShoppingCart, Minus, Plus, ArrowLeft, Package, Share2, Link as LinkIcon, Image as ImageIcon } from "lucide-react"
+import { Heart, ShoppingCart, Minus, Plus, ArrowLeft, Package, Share2, Link as LinkIcon, Image as ImageIcon, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
@@ -19,9 +19,9 @@ import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { ProductPageSkeleton } from "@/components/ui/loading-skeleton"
 import { getContrastingTextColor } from "@/lib/color-utils"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useProductShare } from "@/hooks/use-product-share"
-import { Loader2 } from "lucide-react"
+
 
 export default function ProductPage() {
   const params = useParams()
@@ -36,6 +36,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const { dispatch } = useCart()
   const { dispatch: wishlistDispatch, state: wishlistState } = useWishlist()
+  const shareProps = useProductShare({ product, vendor })
 
   useEffect(() => {
     async function fetchData() {
@@ -67,9 +68,6 @@ export default function ProductPage() {
     fetchData()
   }, [slug, productId])
 
-  const shareProps = product && vendor
-    ? useProductShare({ product, vendor })
-    : { shareLink: () => {}, shareImage: () => {}, isSharing: false, isGenerating: true }
 
   const handleAddToCart = () => {
     if (!product) return
@@ -205,14 +203,14 @@ export default function ProductPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Share</DropdownMenuLabel>
+                        <DropdownMenuLabel>Share this product</DropdownMenuLabel>
                         <DropdownMenuItem onClick={shareProps.shareLink} className="gap-2">
                           <LinkIcon className="h-4 w-4" />
                           Share link
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => shareProps.shareImage()} className="gap-2" disabled={shareProps.isSharing || shareProps.isGenerating}>
                           {shareProps.isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
-                          {shareProps.isSharing ? "Sharing..." : shareProps.isGenerating ? "Preparing..." : "Share image"}
+                          {shareProps.isSharing ? "Sharing..." : shareProps.isGenerating ? "Preparing image..." : "Share image"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

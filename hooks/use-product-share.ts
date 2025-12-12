@@ -7,8 +7,8 @@ import { toImageUrl } from "@/lib/image-utils"
 import type { Product, Vendor } from "@/lib/types"
 
 interface UseProductShareProps {
-  product: Product
-  vendor: Vendor
+  product: Product | null
+  vendor: Vendor | null
 }
 
 export function useProductShare({ product, vendor }: UseProductShareProps) {
@@ -18,10 +18,12 @@ export function useProductShare({ product, vendor }: UseProductShareProps) {
 
   const getShareUrl = () => {
     if (typeof window === "undefined") return ""
+    if (!product || !vendor) return ""
     return `${window.location.origin}/store/${vendor.store_slug}/product/${product.id}`
   }
 
   const ensurePosterFile = async () => {
+    if (!product || !vendor) return null
     if (posterFile) return posterFile
 
     setIsGenerating(true)
@@ -52,6 +54,10 @@ export function useProductShare({ product, vendor }: UseProductShareProps) {
   }
 
   const shareLink = async () => {
+    if (!product || !vendor) {
+      toastHelpers.saveError("Product is not ready to share yet")
+      return
+    }
     const url = getShareUrl()
     try {
       if (navigator.share) {
@@ -74,6 +80,10 @@ export function useProductShare({ product, vendor }: UseProductShareProps) {
 
   const shareImage = async () => {
     if (typeof window === "undefined") return
+    if (!product || !vendor) {
+      toastHelpers.saveError("Product is not ready to share yet")
+      return
+    }
     const file = posterFile || (await ensurePosterFile())
     if (!file) {
       toastHelpers.saveError("Could not prepare image to share")
