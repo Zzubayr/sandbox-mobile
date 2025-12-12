@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 import { notFound } from "next/navigation"
+import { headers } from "next/headers"
 import { connectToDatabase } from "@/lib/db/connection"
 import Vendor from "@/lib/db/models/vendor"
 import Product from "@/lib/db/models/product"
@@ -21,6 +22,68 @@ import { Facebook, Instagram, Twitter, Linkedin, Phone } from "lucide-react"
 interface StorePageProps {
   params: Promise<{ slug: string }>
   searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
+
+function buildAbsoluteUrl(pathOrUrl: string | undefined, baseUrl: string) {
+  if (!pathOrUrl) return ""
+  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) return pathOrUrl
+  if (pathOrUrl.startsWith("//")) return `https:${pathOrUrl}`
+  if (pathOrUrl.startsWith("/")) return `${baseUrl}${pathOrUrl}`
+  return `${baseUrl}/${pathOrUrl}`
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const host = headers().get("host") || process.env.NEXT_PUBLIC_SITE_DOMAIN || "localhost:3000"
+  const protocol = host.includes("localhost") || host.startsWith("127.") ? "http" : "https"
+  const baseUrl = `${protocol}://${host}`
+
+  await connectToDatabase()
+  const vendorDoc = await Vendor.findOne({ store_slug: slug }).lean()
+
+  if (!vendorDoc) {
+    return {
+      title: "Store not found - Ummah Square",
+      description: "This store is unavailable.",
+    }
+  }
+
+  const vendor = {
+    ...vendorDoc,
+    id: (vendorDoc as any)._id?.toString?.(),
+  } as any
+
+  const title = vendor.store_name || "Ummah Square"
+  const description = vendor.description || "Browse products on Ummah Square"
+  const imageUrl = buildAbsoluteUrl(vendor.banner_url || vendor.logo_url || "/logo.png", baseUrl)
+  const pageUrl = `${baseUrl}/store/${slug}`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: vendor.store_name || "Ummah Square",
+      images: imageUrl
+        ? [
+            {
+              url: imageUrl,
+              width: 1200,
+              height: 630,
+              alt: vendor.store_name || "Store banner",
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  }
 }
 
 function shapeId<T extends { _id?: any }>(doc: T) {

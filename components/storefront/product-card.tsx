@@ -13,6 +13,8 @@ import { getThemeColors } from "@/lib/theme-colors"
 import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { cn } from "@/lib/utils"
+import { useProductShare } from "@/hooks/use-product-share"
+import { Share2, Loader2 } from "lucide-react"
 
 interface ProductCardProps {
   product: Product
@@ -24,6 +26,8 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
   const colors = getThemeColors(vendor.theme_color)
   const { dispatch } = useCart()
   const { dispatch: wishlistDispatch, state: wishlistState } = useWishlist()
+  
+  const { shareImage, isSharing, isGenerating } = useProductShare({ product, vendor })
 
   const rawUnit = (product as any)?.attributes?.price_unit || product.unit
   const unitLabel = (() => {
@@ -117,6 +121,23 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
                 isInWishlist ? "text-red-500 fill-red-500" : "text-slate-600 group-hover/heart:text-red-500"
               )} 
             />
+          </button>
+
+          {/* Share Button */}
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              shareImage()
+            }}
+            disabled={isSharing || isGenerating}
+            className="absolute top-14 right-3 p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 z-20 group/share disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
+            ) : (
+              <Share2 className="h-4 w-4 text-slate-600 group-hover/share:text-slate-900" />
+            )}
           </button>
         </div>
 

@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   description: 'Create beautiful online catalogs for your business. Let customers browse and request products through WhatsApp.',
   generator: 'Ummah Square',
   manifest: '/manifest.json',
+}
+
+export const viewport = {
   themeColor: '#2B6DA9',
 }
 

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Heart, ShoppingCart, Minus, Plus, ArrowLeft, Package } from "lucide-react"
+import { Heart, ShoppingCart, Minus, Plus, ArrowLeft, Package, Share2, Link as LinkIcon, Image as ImageIcon } from "lucide-react"
 import Image from "next/image"
 import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
@@ -19,6 +19,9 @@ import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { ProductPageSkeleton } from "@/components/ui/loading-skeleton"
 import { getContrastingTextColor } from "@/lib/color-utils"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { useProductShare } from "@/hooks/use-product-share"
+import { Loader2 } from "lucide-react"
 
 export default function ProductPage() {
   const params = useParams()
@@ -31,7 +34,6 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-
   const { dispatch } = useCart()
   const { dispatch: wishlistDispatch, state: wishlistState } = useWishlist()
 
@@ -65,6 +67,11 @@ export default function ProductPage() {
     fetchData()
   }, [slug, productId])
 
+  const { shareLink, shareImage, isSharing, isGenerating } = useProductShare({ 
+    product: product!, 
+    vendor: vendor! 
+  })
+
   const handleAddToCart = () => {
     if (!product) return
     dispatch.addItem(product, quantity)
@@ -84,6 +91,8 @@ export default function ProductPage() {
     if (!vendor) return
     router.push(`/store/${vendor.store_slug}/checkout`)
   }
+
+
 
   const isInWishlist = product ? wishlistState.items.some((item: Product) => item.id === product.id) : false
 
@@ -180,14 +189,37 @@ export default function ProductPage() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
               <div className="space-y-4">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold mb-3 text-slate-900 leading-tight">{product.title}</h1>
-                  {product.category && (
-                    <Badge variant="outline" className="mb-4 text-xs border-slate-300 text-slate-600">
-                      {product.category.name}
-                    </Badge>
-                  )}
-                </div>
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="flex-1">
+                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 text-slate-900 leading-tight tracking-tight">
+                        {product.title}
+                      </h1>
+                      {product.category && (
+                        <Badge variant="outline" className="mb-4 text-xs border-slate-300 text-slate-600">
+                          {product.category.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Share2 className="h-4 w-4" />
+                          Share
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Share</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={shareLink} className="gap-2">
+                          <LinkIcon className="h-4 w-4" />
+                          Share link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => shareImage()} className="gap-2" disabled={isSharing || isGenerating}>
+                          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                          {isSharing ? "Sharing..." : isGenerating ? "Generating..." : "Share image"}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 
                 {(() => {
                   const rawUnit = (product as any)?.attributes?.price_unit || product.unit
@@ -216,11 +248,11 @@ export default function ProductPage() {
                     }
                   })()
                   return (
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-3xl md:text-4xl font-bold text-slate-900">
+                    <div className="flex items-baseline gap-2 mt-2">
+                       <p className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight">
                         ₦{product.price.toLocaleString()}
                         {unitLabel && (
-                          <span className="text-lg text-slate-500">/{unitLabel}</span>
+                          <span className="text-xl text-slate-500 font-medium ml-1">/{unitLabel}</span>
                         )}
                       </p>
                     </div>
@@ -228,7 +260,7 @@ export default function ProductPage() {
                 })()}
 
                 {product.description && (
-                  <p className="text-slate-600 leading-relaxed">
+                  <p className="text-lg text-slate-600 leading-relaxed max-w-2xl">
                     {product.description}
                   </p>
                 )}
