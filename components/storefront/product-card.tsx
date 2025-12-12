@@ -14,7 +14,6 @@ import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { cn } from "@/lib/utils"
 import { useProductShare } from "@/hooks/use-product-share"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface ProductCardProps {
   product: Product
@@ -112,34 +111,17 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
               />
             </button>
 
-            {/* Share Button */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                  }}
-                  className="p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 z-20 group/share"
-                >
-                  <Share2 className="h-4 w-4 text-slate-600 group-hover/share:text-slate-900" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Share</DropdownMenuLabel>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    shareLink()
-                  }}
-                  className="gap-2"
-                >
-                  <LinkIcon className="h-4 w-4" />
-                  Share link
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Share Button */}
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              shareLink()
+            }}
+            className="p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 z-20 group/share"
+          >
+            <Share2 className="h-4 w-4 text-slate-600 group-hover/share:text-slate-900" />
+          </button>
           </div>
           {/* DESKTOP ONLY: Quick Actions (Slide up on hover) */}
            {!isOutOfStock && (
