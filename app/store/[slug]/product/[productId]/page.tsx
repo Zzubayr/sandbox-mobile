@@ -67,10 +67,9 @@ export default function ProductPage() {
     fetchData()
   }, [slug, productId])
 
-  const { shareLink, shareImage, isSharing, isGenerating } = useProductShare({ 
-    product: product!, 
-    vendor: vendor! 
-  })
+  const shareProps = product && vendor
+    ? useProductShare({ product, vendor })
+    : { shareLink: () => {}, shareImage: () => {}, isSharing: false, isGenerating: true }
 
   const handleAddToCart = () => {
     if (!product) return
@@ -189,11 +188,9 @@ export default function ProductPage() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
               <div className="space-y-4">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div className="flex-1">
-                      <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-4 text-slate-900 leading-tight tracking-tight">
-                        {product.title}
-                      </h1>
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h1 className="text-2xl md:text-3xl font-bold mb-3 text-slate-900 leading-tight">{product.title}</h1>
                       {product.category && (
                         <Badge variant="outline" className="mb-4 text-xs border-slate-300 text-slate-600">
                           {product.category.name}
@@ -209,13 +206,13 @@ export default function ProductPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Share</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={shareLink} className="gap-2">
+                        <DropdownMenuItem onClick={shareProps.shareLink} className="gap-2">
                           <LinkIcon className="h-4 w-4" />
                           Share link
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => shareImage()} className="gap-2" disabled={isSharing || isGenerating}>
-                          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
-                          {isSharing ? "Sharing..." : isGenerating ? "Generating..." : "Share image"}
+                        <DropdownMenuItem onClick={() => shareProps.shareImage()} className="gap-2" disabled={shareProps.isSharing || shareProps.isGenerating}>
+                          {shareProps.isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                          {shareProps.isSharing ? "Sharing..." : shareProps.isGenerating ? "Preparing..." : "Share image"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

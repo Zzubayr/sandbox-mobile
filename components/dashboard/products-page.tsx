@@ -16,13 +16,11 @@ import { ProductGridSkeleton } from "@/components/ui/loading-skeletons"
 import { CategoryManager } from "@/components/dashboard/category-manager"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor, Product, Category } from "@/lib/types"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -48,12 +46,7 @@ export default function ProductsPage() {
     productTitle: "",
     newStatus: ""
   })
-  const [adjustDialog, setAdjustDialog] = useState<{ open: boolean; productId: string | null; productTitle: string }>({ open: false, productId: null, productTitle: "" })
-  const [adjustValue, setAdjustValue] = useState("0")
   const [actionLoading, setActionLoading] = useState(false)
-  const [movementDialog, setMovementDialog] = useState<{ open: boolean; productId: string | null; productTitle: string }>({ open: false, productId: null, productTitle: "" })
-  const [movementLoading, setMovementLoading] = useState(false)
-  const [movements, setMovements] = useState<Array<{ id: string; type: string; quantity: number; created_at?: string; note?: string }>>([])
 
   useEffect(() => {
     loadData()
@@ -184,59 +177,6 @@ export default function ProductsPage() {
     return matchesSearch && matchesStatus && matchesCategory && matchesVisibility
   })
 
-  const openAdjustDialog = (productId: string, productTitle: string) => {
-    setAdjustValue("0")
-    setAdjustDialog({ open: true, productId, productTitle })
-  }
-
-  const submitAdjust = async () => {
-    if (!adjustDialog.productId) return
-    const delta = Number(adjustValue)
-    if (!Number.isFinite(delta) || delta === 0) {
-      toastHelpers.saveError("Enter a non-zero number to adjust stock")
-      return
-    }
-    setActionLoading(true)
-    try {
-      const resp = await fetch(`/api/dashboard/products/${adjustDialog.productId}/adjust`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delta })
-      })
-      const data = await resp.json()
-      if (!resp.ok) throw new Error(data?.error || 'Failed')
-      setProducts(products.map(p => p.id === adjustDialog.productId ? { ...p, stock: data.stock } : p))
-      toastHelpers.success(`Stock updated for "${adjustDialog.productTitle}"`)
-      setAdjustDialog({ open: false, productId: null, productTitle: "" })
-    } catch (error) {
-      console.error('Error adjusting stock:', error)
-      toastHelpers.saveError('Failed to adjust stock')
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const openMovements = async (productId: string, productTitle: string) => {
-    setMovementDialog({ open: true, productId, productTitle })
-    setMovementLoading(true)
-    try {
-      const resp = await fetch(`/api/dashboard/products/${productId}/movements`, { cache: 'no-store' })
-      const data = await resp.json()
-      if (!resp.ok) throw new Error(data?.error || 'Failed')
-      setMovements((data.movements || []).map((m: any) => ({
-        id: m.id || m._id || Math.random().toString(36).slice(2),
-        type: m.type,
-        quantity: m.quantity,
-        created_at: m.created_at,
-        note: m.note
-      })))
-    } catch (error) {
-      console.error('Error loading movements:', error)
-      toastHelpers.saveError('Failed to load history')
-    } finally {
-      setMovementLoading(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -247,7 +187,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-screen bg-slate-50 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -319,21 +259,19 @@ export default function ProductsPage() {
             <Button
               variant="outline"
               onClick={() => setShowInactive(!showInactive)}
-              className="flex items-center gap-2 h-11 sm:col-span-2 lg:col-span-1"
+              className="flex items-center gap-2 h-11 sm:col-span-2 lg:col-span-1 justify-center"
             >
               {showInactive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span className="hidden sm:inline">{showInactive ? "Hide Inactive" : "Show Inactive"}</span>
-              <span className="sm:hidden">{showInactive ? "Hide" : "Show"}</span>
+              <span className="text-sm">{showInactive ? "Hide inactive products" : "Show inactive products"}</span>
             </Button>
 
             <Button
               variant="outline"
               onClick={() => setShowArchived(!showArchived)}
-              className="flex items-center gap-2 h-11 sm:col-span-2 lg:col-span-1"
+              className="flex items-center gap-2 h-11 sm:col-span-2 lg:col-span-1 justify-center"
             >
               {showArchived ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span className="hidden sm:inline">{showArchived ? "Hide Archived" : "Show Archived"}</span>
-              <span className="sm:hidden">{showArchived ? "Hide" : "Show"}</span>
+              <span className="text-sm">{showArchived ? "Hide archived products" : "Show archived products"}</span>
             </Button>
           </div>
         </CardContent>
@@ -392,28 +330,7 @@ export default function ProductsPage() {
                       {product.category.name}
                     </Badge>
                   )}
-                  {Array.isArray((product as any).variants) && (product as any).variants.length > 0 && (
-                    <div className="space-y-1 rounded-md border border-slate-100 bg-slate-50 p-2">
-                      <p className="text-xs font-semibold text-slate-600">Variants</p>
-                      {(product as any).variants.slice(0, 3).map((v: any, idx: number) => (
-                        <div key={v.id || idx} className="flex items-center justify-between text-xs text-slate-700">
-                          <span className="truncate max-w-[180px]">
-                            {v.sku || 'Variant'} {v.attributes ? `• ${Object.entries(v.attributes).map(([k, val]) => `${k}:${val}`).join(', ')}` : ''}
-                          </span>
-                          <span className="font-semibold">{typeof v.stock === 'number' ? v.stock : 0}</span>
-                        </div>
-                      ))}
-                      {(product as any).variants.length > 3 && (
-                        <p className="text-[11px] text-slate-500">+{(product as any).variants.length - 3} more</p>
-                      )}
-                    </div>
-                  )}
-                  {product.safety_stock !== undefined && product.stock <= (product.safety_stock || 0) && !product.is_archived && (
-                    <Badge className="w-fit bg-amber-500 text-white">Low stock</Badge>
-                  )}
-                  {product.allow_backorder && (
-                    <Badge variant="outline" className="w-fit border-blue-200 text-blue-700 bg-blue-50">Backorders allowed</Badge>
-                  )}
+                  {/* Inventory-specific details hidden on dashboard product cards */}
                 </div>
               </CardHeader>
               
@@ -447,46 +364,14 @@ export default function ProductsPage() {
                               return rawUnit || undefined
                           }
                         })()
-                        const stockRawUnit = (product as any)?.attributes?.stock_unit || 'units'
-                        const stockUnitLabel = (() => {
-                          switch (stockRawUnit) {
-                            case 'yard':
-                              return 'yards'
-                            case 'meter':
-                              return 'meters'
-                            case 'lb':
-                              return 'lbs'
-                            case 'piece':
-                              return 'pieces'
-                            case 'set':
-                              return 'sets'
-                            case 'box':
-                              return 'boxes'
-                            case 'pack':
-                              return 'packs'
-                            case 'dozen':
-                              return 'dozen'
-                            case 'kg':
-                            case 'units':
-                            case 'unit':
-                            default:
-                              return stockRawUnit || 'units'
-                          }
-                        })()
+
                         return (
-                          <>
-                            <p className="text-2xl font-bold text-slate-800">
-                              ₦{Number(product.price).toLocaleString()}
-                              {unitLabel && (
-                                <span className="text-sm font-normal text-slate-500 ml-1">/ {unitLabel}</span>
-                              )}
-                            </p>
-                            {product.stock > 0 && product.stock < 5 && (
-                              <p className="text-sm text-amber-700">
-                                Low stock: {product.stock} {stockUnitLabel}
-                              </p>
+                          <p className="text-2xl font-bold text-slate-800">
+                            NGN {Number(product.price).toLocaleString()}
+                            {unitLabel && (
+                              <span className="text-sm font-normal text-slate-500 ml-1">/ {unitLabel}</span>
                             )}
-                          </>
+                          </p>
                         )
                       })()}
                     </div>
@@ -561,14 +446,6 @@ export default function ProductsPage() {
                             )}
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => openAdjustDialog(product.id, product.title)}>
-                          <span>Adjust Stock</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openMovements(product.id, product.title)}>
-                          <span>Stock History</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         {product.is_archived ? (
                           <DropdownMenuItem onClick={() => restoreProduct(product.id, product.title)}>
                             <Eye className="mr-2 h-4 w-4" />
@@ -688,26 +565,6 @@ export default function ProductsPage() {
       />
 
       <ConfirmationDialog
-        open={adjustDialog.open}
-        onOpenChange={(open) => setAdjustDialog({ ...adjustDialog, open })}
-        title="Adjust Stock"
-        description={`Enter a positive number to add stock or negative to remove for "${adjustDialog.productTitle}".`}
-        confirmText="Update Stock"
-        cancelText="Cancel"
-        onConfirm={submitAdjust}
-        loading={actionLoading}
-      >
-        <div className="pt-4">
-          <Input
-            type="number"
-            value={adjustValue}
-            onChange={(e) => setAdjustValue(e.target.value)}
-            placeholder="e.g. 5 or -3"
-          />
-        </div>
-      </ConfirmationDialog>
-
-      <ConfirmationDialog
         open={statusDialog.open}
         onOpenChange={(open) => setStatusDialog({ ...statusDialog, open })}
         title={`${statusDialog.newStatus === 'active' ? 'Show' : 'Hide'} Product`}
@@ -718,43 +575,6 @@ export default function ProductsPage() {
         loading={actionLoading}
       />
 
-      <Dialog open={movementDialog.open} onOpenChange={(open) => setMovementDialog({ ...movementDialog, open })}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Stock History</DialogTitle>
-            <DialogDescription>{movementDialog.productTitle || 'Product'}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {movementLoading ? (
-              <p className="text-sm text-slate-500">Loading history...</p>
-            ) : movements.length === 0 ? (
-              <p className="text-sm text-slate-500">No movements recorded yet.</p>
-            ) : (
-              movements.map((m) => (
-                <div key={m.id} className="flex items-start justify-between rounded-md border p-2">
-                  <div>
-                    <p className="font-medium text-slate-800 capitalize">{m.type}</p>
-                    {m.note && <p className="text-xs text-slate-500 mt-1">{m.note}</p>}
-                    {m.created_at && (
-                      <p className="text-xs text-slate-400 mt-1">
-                        {new Date(m.created_at).toLocaleString()}
-                      </p>
-                    )}
-                  </div>
-                  <span className={`text-sm font-semibold ${m.quantity < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {m.quantity > 0 ? '+' : ''}{m.quantity}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMovementDialog({ open: false, productId: null, productTitle: "" })}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
