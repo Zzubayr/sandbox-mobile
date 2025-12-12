@@ -14,9 +14,10 @@ import Link from "next/link"
 import { getContrastingTextColor } from "@/lib/color-utils"
 import CloudinaryUploadDeferred, { type PendingFile } from "@/components/ui/cloudinary-upload-deferred"
 import { uploadImageWithMeta } from "@/lib/cloudinary"
-import { AttributeEditor } from "@/components/dashboard/attribute-editor"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor, Category } from "@/lib/types"
+import { ProductVariationsDrawer } from "@/components/dashboard/product-variations-drawer"
+import { PriceInput } from "@/components/dashboard/price-input"
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -28,7 +29,8 @@ export default function NewProductPage() {
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
   const [catSaving, setCatSaving] = useState(false)
-  // attributes are edited via AttributeEditor and stored as arrays
+  const [variationsDrawerOpen, setVariationsDrawerOpen] = useState(false)
+  // attributes are edited via ProductVariationsDrawer
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -42,40 +44,11 @@ export default function NewProductPage() {
     status: "active" as "active" | "inactive" | "draft",
   })
 
-  // Local helpers for variants/attributes UX
-  const addColor = (name: string) => {
-    const val = name.trim()
-    if (!val) return
-    const current: string[] = Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []
-    if (current.includes(val)) return
+  // Handle variations save from drawer
+  const handleVariationsSave = (attributes: Record<string, any>) => {
     setFormData((prev) => ({
       ...prev,
-      attributes: { ...prev.attributes, colors: [...current, val] },
-    }))
-  }
-  const removeColor = (name: string) => {
-    const current: string[] = Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []
-    setFormData((prev) => ({
-      ...prev,
-      attributes: { ...prev.attributes, colors: current.filter((c) => c !== name) },
-    }))
-  }
-  const toggleSize = (size: string) => {
-    const current: string[] = Array.isArray(formData.attributes.sizes) ? formData.attributes.sizes : []
-    const set = new Set(current)
-    if (set.has(size)) set.delete(size)
-    else set.add(size)
-    setFormData((prev) => ({
-      ...prev,
-      attributes: { ...prev.attributes, sizes: Array.from(set) },
-    }))
-  }
-  const setWeight = (value: string, unit: string) => {
-    const val = value.trim()
-    const final = val ? `${val} ${unit}` : ""
-    setFormData((prev) => ({
-      ...prev,
-      attributes: { ...prev.attributes, weight: final },
+      attributes,
     }))
   }
 
@@ -230,6 +203,27 @@ export default function NewProductPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-6">
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="w-5 h-5 text-green-600" />
+                Product Images
+              </CardTitle>
+              <CardDescription>Upload high-quality images to showcase your product</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CloudinaryUploadDeferred
+                onSelect={onSelectPending}
+                onRemove={onRemovePending}
+                pending={pendingFiles}
+                maxFiles={5}
+                label="Select Product Images"
+                description="Preview immediately. Images will upload when you save."
+                className="w-full"
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
@@ -261,12 +255,10 @@ export default function NewProductPage() {
                 <div className="space-y-2">
                   <Label htmlFor="price">Price *</Label>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
+                    <PriceInput
                       id="price"
-                      type="number"
-                      step="0.01"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      onChange={(val) => setFormData({ ...formData, price: val })}
                       placeholder="99.99"
                       className="flex-1 h-11"
                     />
@@ -402,90 +394,78 @@ export default function NewProductPage() {
             </CardContent>
           </Card>
 
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Image className="w-5 h-5 text-green-600" />
-                    Product Images
-                  </CardTitle>
-                  <CardDescription>Upload high-quality images to showcase your product</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CloudinaryUploadDeferred
-                    onSelect={onSelectPending}
-                    onRemove={onRemovePending}
-                    pending={pendingFiles}
-                    maxFiles={5}
-                    label="Select Product Images"
-                    description="Preview immediately. Images will upload when you save."
-                    className="w-full"
-                  />
-                </CardContent>
-              </Card>
-
           <Card>
             <CardHeader>
-              <CardTitle>Product Attributes</CardTitle>
-              <CardDescription>Add specifications and features</CardDescription>
+              <CardTitle>Product Variations</CardTitle>
+              <CardDescription>
+                Does this product have variations such as colors, sizes, etc.?
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Variants & Attributes quick UI */}
-              <div className="p-4 rounded-lg border bg-slate-50">
-                <h4 className="font-medium mb-3">Variants & Attributes</h4>
-                {/* Colors */}
-                <div className="mb-4">
-                  <Label className="text-sm mb-2 block">Color Options</Label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {(Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []).map((c: string) => (
-                      <Badge key={c} className="gap-1" style={{ backgroundColor: c, color: getContrastingTextColor(c), borderColor: "transparent" }}>{c}<button type="button" className="opacity-80 hover:opacity-100" onClick={() => removeColor(c)}>
-                          ×
-                        </button></Badge>
-                    ))}
+              {/* Summary of current variations */}
+              <div className="space-y-3">
+                {formData.attributes.colors && formData.attributes.colors.length > 0 && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Colors</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {formData.attributes.colors.slice(0, 5).map((c: string) => (
+                        <Badge
+                          key={c}
+                          variant="secondary"
+                          style={{
+                            backgroundColor: c,
+                            color: getContrastingTextColor(c),
+                            borderColor: "transparent"
+                          }}
+                        >
+                          {c}
+                        </Badge>
+                      ))}
+                      {formData.attributes.colors.length > 5 && (
+                        <Badge variant="outline">+{formData.attributes.colors.length - 5} more</Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input placeholder="e.g., Red" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor((e.target as HTMLInputElement).value); (e.target as HTMLInputElement).value = '' } }} className="flex-1" />
-                    <Button type="button" variant="outline" onClick={(e) => { const input = (e.currentTarget.parentElement?.querySelector('input')) as HTMLInputElement | null; if (input) { addColor(input.value); input.value = '' } }} className="w-full sm:w-auto">Add Color</Button>
+                )}
+                
+                {formData.attributes.sizes && formData.attributes.sizes.length > 0 && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Sizes</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {formData.attributes.sizes.slice(0, 6).map((s: string) => (
+                        <Badge key={s} variant="secondary">{s}</Badge>
+                      ))}
+                      {formData.attributes.sizes.length > 6 && (
+                        <Badge variant="outline">+{formData.attributes.sizes.length - 6} more</Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Sizes */}
-                <div className="mb-4">
-                  <Label className="text-sm mb-2 block">Size Options</Label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {['XS','S','M','L','XL','XXL'].map((s) => {
-                      const active = Array.isArray(formData.attributes.sizes) && formData.attributes.sizes.includes(s)
-                      return (
-                        <Button key={s} type="button" variant={active ? 'default' : 'outline'} size="sm" onClick={() => toggleSize(s)}>
-                          {s}
-                        </Button>
-                      )
-                    })}
+                {formData.attributes.weight && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Weight</Label>
+                    <p className="text-sm mt-1">{formData.attributes.weight}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Input placeholder="Custom sizes (comma separated)" onKeyDown={(e) => { if (e.key==='Enter'){ e.preventDefault(); const vals = (e.target as HTMLInputElement).value.split(',').map(v=>v.trim()).filter(Boolean); vals.forEach(v=>toggleSize(v)); (e.target as HTMLInputElement).value='' } }} className="w-full" />
-                  </div>
-                </div>
+                )}
 
-                {/* Weight */}
-                <div className="mb-2">
-                  <Label className="text-sm mb-2 block">Weight</Label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input placeholder="e.g., 1.2" className="flex-1 sm:w-28" onChange={(e) => setWeight(e.target.value, (document.getElementById('weight-unit') as HTMLSelectElement)?.value || 'kg')} />
-                    <select id="weight-unit" className="border rounded px-2 w-full sm:w-auto" onChange={(e) => setWeight(((document.querySelector('#weight-unit') as HTMLSelectElement) && (document.querySelector<HTMLInputElement>('input[placeholder="e.g., 1.2"]')?.value || ''))!, e.target.value)}>
-                      <option value="kg">kg</option>
-                      <option value="g">g</option>
-                      <option value="lb">lb</option>
-                    </select>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">Saved as a simple string (e.g., "1.2 kg").</p>
-                </div>
+                {!formData.attributes.colors && !formData.attributes.sizes && !formData.attributes.weight && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No variations added yet
+                  </p>
+                )}
               </div>
 
-              <AttributeEditor
-                attributes={formData.attributes}
-                excludeKeys={["price_unit","stock_unit"]}
-                onChange={(next) => setFormData({ ...formData, attributes: next })}
-              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setVariationsDrawerOpen(true)}
+              >
+                {formData.attributes.colors || formData.attributes.sizes || formData.attributes.weight
+                  ? "Edit Variations"
+                  : "Add Variations"}
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -533,6 +513,14 @@ export default function NewProductPage() {
           </Card>
         </div>
       </div>
+
+      {/* Variations Drawer */}
+      <ProductVariationsDrawer
+        open={variationsDrawerOpen}
+        onOpenChange={setVariationsDrawerOpen}
+        attributes={formData.attributes}
+        onSave={handleVariationsSave}
+      />
     </div>
   )
 }

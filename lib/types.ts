@@ -63,15 +63,36 @@ export interface Product {
   category_id?: string
   title: string
   description?: string
+  sku?: string
   price: number
+  compare_at_price?: number
+  cost?: number
   stock: number
+  stock_unit?: "units" | "kg" | "lb" | "meter" | "yard" | "piece" | "set" | "box" | "pack" | "dozen"
+  safety_stock?: number
+  reorder_point?: number
+  allow_backorder?: boolean
+  max_per_order?: number
+  reserved_stock?: number
   unit?: string
   images: (string | { url: string; public_id: string })[]
   colors?: string[]
   sizes?: string[]
   weight?: string
   attributes: Record<string, any>
+  variants?: Array<{
+    id?: string
+    sku?: string
+    attributes?: Record<string, any>
+    price?: number
+    cost?: number
+    stock?: number
+    weight?: string
+    images?: any[]
+    status?: "active" | "inactive" | "draft"
+  }>
   status: "active" | "inactive" | "draft"
+  is_archived?: boolean
   created_at: string
   updated_at: string
   category?: Category

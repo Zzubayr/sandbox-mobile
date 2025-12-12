@@ -14,9 +14,10 @@ import { getContrastingTextColor } from "@/lib/color-utils"
 import Link from "next/link"
 import CloudinaryUploadDeferred, { type PendingFile } from "@/components/ui/cloudinary-upload-deferred"
 import { uploadImageWithMeta } from "@/lib/cloudinary"
-import { AttributeEditor } from "@/components/dashboard/attribute-editor"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor, Category, Product } from "@/lib/types"
+import { ProductVariationsDrawer } from "@/components/dashboard/product-variations-drawer"
+import { PriceInput } from "@/components/dashboard/price-input"
 
 export default function EditProductPage() {
   const router = useRouter()
@@ -32,6 +33,8 @@ export default function EditProductPage() {
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState("")
   const [catSaving, setCatSaving] = useState(false)
+  const [variationsDrawerOpen, setVariationsDrawerOpen] = useState(false)
+  const [variants, setVariants] = useState<Array<any>>([])
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -44,32 +47,37 @@ export default function EditProductPage() {
     attributes: {} as Record<string, any>,
     status: "active" as "active" | "inactive" | "draft",
   })
-  // Local UI state for weight inputs to avoid DOM querying
-  const [weightVal, setWeightVal] = useState("")
-  const [weightUnit, setWeightUnit] = useState<"kg" | "g" | "lb">("kg")
 
-  // Variants helpers merged into attributes UI
-  const addColor = (name: string) => {
-    const val = name.trim()
-    if (!val) return
-    const current: string[] = Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []
-    if (current.includes(val)) return
-    setFormData((prev) => ({ ...prev, attributes: { ...prev.attributes, colors: [...current, val] } }))
+  // Handle variations save from drawer
+  const handleVariationsSave = (attributes: Record<string, any>) => {
+    setFormData((prev) => ({
+      ...prev,
+      attributes,
+    }))
   }
-  const removeColor = (name: string) => {
-    const current: string[] = Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []
-    setFormData((prev) => ({ ...prev, attributes: { ...prev.attributes, colors: current.filter((c) => c !== name) } }))
+
+  const addVariant = () => {
+    setVariants((prev) => [
+      ...prev,
+      {
+        id: `tmp-${Date.now()}`,
+        sku: "",
+        price: "",
+        stock: "",
+        status: "active",
+        attrInput: "",
+      },
+    ])
   }
-  const toggleSize = (size: string) => {
-    const current: string[] = Array.isArray(formData.attributes.sizes) ? formData.attributes.sizes : []
-    const set = new Set(current)
-    if (set.has(size)) set.delete(size); else set.add(size)
-    setFormData((prev) => ({ ...prev, attributes: { ...prev.attributes, sizes: Array.from(set) } }))
+
+  const updateVariant = (id: string, key: string, value: any) => {
+    setVariants((prev) =>
+      prev.map((v) => (v.id === id ? { ...v, [key]: value } : v))
+    )
   }
-  const setWeight = (value: string, unit: string) => {
-    const val = value.trim()
-    const final = val ? `${val} ${unit}` : ""
-    setFormData((prev) => ({ ...prev, attributes: { ...prev.attributes, weight: final } }))
+
+  const removeVariant = (id: string) => {
+    setVariants((prev) => prev.filter((v) => v.id !== id))
   }
 
   useEffect(() => {
@@ -112,6 +120,18 @@ export default function EditProductPage() {
         attributes: productData.attributes || {},
         status: productData.status,
       })
+      setVariants(
+        Array.isArray(productData.variants)
+          ? productData.variants.map((v: any) => ({
+            ...v,
+            attrInput: v.attributes
+              ? Object.entries(v.attributes)
+                  .map(([k, val]) => `${k}=${val}`)
+                  .join(", ")
+              : "",
+          }))
+          : []
+      )
 
       const catsRes = await fetch('/api/dashboard/categories', { cache: 'no-store' })
       if (catsRes.ok) {
@@ -170,6 +190,26 @@ export default function EditProductPage() {
             price_unit: formData.price_unit,
             stock_unit: formData.stock_unit,
           },
+          variants: variants.map((v) => {
+            const attrObj: Record<string, any> = {}
+            if (v.attrInput && typeof v.attrInput === 'string') {
+              v.attrInput.split(',').map((s: string) => s.trim()).filter(Boolean).forEach((pair: string) => {
+                const [k, ...rest] = pair.split('=')
+                if (k) attrObj[k.trim()] = rest.join('=').trim()
+              })
+            } else if (v.attributes && typeof v.attributes === 'object') {
+              Object.assign(attrObj, v.attributes)
+            }
+            return {
+              id: v.id,
+              sku: v.sku || undefined,
+              price: typeof v.price === 'number' ? v.price : (v.price ? Number(v.price) : undefined),
+              cost: typeof v.cost === 'number' ? v.cost : (v.cost ? Number(v.cost) : undefined),
+              stock: typeof v.stock === 'number' ? v.stock : (v.stock ? Number(v.stock) : 0),
+              attributes: attrObj,
+              status: ['active','inactive','draft'].includes(v.status) ? v.status : 'active',
+            }
+          }),
           status: formData.status,
         }),
       })
@@ -231,6 +271,38 @@ export default function EditProductPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-0 shadow-lg">
             <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-green-600" />
+                Product Images
+              </CardTitle>
+              <CardDescription>Upload high-quality images to showcase your product</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {formData.images.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                  {formData.images.map((img, idx) => (
+                    <div key={idx} className="relative group">
+                      <div className="aspect-square relative rounded overflow-hidden">
+                        <img src={(typeof img === 'string' ? img : (img as any)?.url) || "/placeholder.svg"} alt={`Image ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeImageByIndex(idx)}
+                          className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                          aria-label="Remove image"
+                        >
+                          <Badge variant="destructive" className="cursor-pointer select-none">Remove</Badge>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <CloudinaryUploadDeferred onSelect={onSelectPending} onRemove={onRemovePending} pending={pendingFiles} maxFiles={Math.max(0, 5 - formData.images.length)} label="Select Product Images" description="Preview now; images upload when you save." className="w-full" />
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
               <CardTitle>Basic Information</CardTitle>
               <CardDescription>Essential product details</CardDescription>
             </CardHeader>
@@ -249,7 +321,12 @@ export default function EditProductPage() {
                 <div className="space-y-2">
                   <Label htmlFor="price">Price *</Label>
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="flex-1 h-11" />
+                    <PriceInput 
+                      id="price" 
+                      value={formData.price} 
+                      onChange={(val) => setFormData({ ...formData, price: val })} 
+                      className="flex-1 h-11" 
+                    />
                     <Select value={formData.price_unit} onValueChange={(value: string) => setFormData({ ...formData, price_unit: value })}>
                       <SelectTrigger className="w-full sm:w-24 h-11">
                         <SelectValue />
@@ -361,107 +438,162 @@ export default function EditProductPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-lg">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ImageIcon className="w-5 h-5 text-green-600" />
-                Product Images
-              </CardTitle>
-              <CardDescription>Upload high-quality images to showcase your product</CardDescription>
+              <CardTitle>Product Variations</CardTitle>
+              <CardDescription>
+                Does this product have variations such as colors, sizes, etc.?
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              {formData.images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                  {formData.images.map((img, idx) => (
-                    <div key={idx} className="relative group">
-                      <div className="aspect-square relative rounded overflow-hidden">
-                        <img src={(typeof img === 'string' ? img : (img as any)?.url) || "/placeholder.svg"} alt={`Image ${idx + 1}`} className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => removeImageByIndex(idx)}
-                          className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                          aria-label="Remove image"
+            <CardContent className="space-y-4">
+              {/* Summary of current variations */}
+              <div className="space-y-3">
+                {formData.attributes.colors && formData.attributes.colors.length > 0 && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Colors</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {formData.attributes.colors.slice(0, 5).map((c: string) => (
+                        <Badge
+                          key={c}
+                          variant="secondary"
+                          style={{
+                            backgroundColor: c,
+                            color: getContrastingTextColor(c),
+                            borderColor: "transparent"
+                          }}
                         >
-                          <Badge variant="destructive" className="cursor-pointer select-none">Remove</Badge>
-                        </button>
-                      </div>
+                          {c}
+                        </Badge>
+                      ))}
+                      {formData.attributes.colors.length > 5 && (
+                        <Badge variant="outline">+{formData.attributes.colors.length - 5} more</Badge>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-              <CloudinaryUploadDeferred onSelect={onSelectPending} onRemove={onRemovePending} pending={pendingFiles} maxFiles={Math.max(0, 5 - formData.images.length)} label="Select Product Images" description="Preview now; images upload when you save." className="w-full" />
+                  </div>
+                )}
+                
+                {formData.attributes.sizes && formData.attributes.sizes.length > 0 && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Sizes</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {formData.attributes.sizes.slice(0, 6).map((s: string) => (
+                        <Badge key={s} variant="secondary">{s}</Badge>
+                      ))}
+                      {formData.attributes.sizes.length > 6 && (
+                        <Badge variant="outline">+{formData.attributes.sizes.length - 6} more</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {formData.attributes.weight && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Weight</Label>
+                    <p className="text-sm mt-1">{formData.attributes.weight}</p>
+                  </div>
+                )}
+
+                {!formData.attributes.colors && !formData.attributes.sizes && !formData.attributes.weight && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No variations added yet
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setVariationsDrawerOpen(true)}
+              >
+                {formData.attributes.colors || formData.attributes.sizes || formData.attributes.weight
+                  ? "Edit Variations"
+                  : "Add Variations"}
+              </Button>
             </CardContent>
           </Card>
 
           <Card className="border-0 shadow-lg">
             <CardHeader>
-              <CardTitle>Product Attributes</CardTitle>
-              <CardDescription>Variants & custom attributes</CardDescription>
+              <CardTitle>Variants (Per SKU)</CardTitle>
+              <CardDescription>Set per-variant stock, price, and attributes</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Variants & Attributes */}
-              <div className="p-4 rounded-lg border bg-slate-50">
-                <h4 className="font-medium mb-3">Variants & Attributes</h4>
-                {/* Colors */}
-                <div className="mb-4">
-                  <Label className="text-sm mb-2 block">Color Options</Label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {(Array.isArray(formData.attributes.colors) ? formData.attributes.colors : []).map((c: string) => (
-                      <Badge key={c} className="gap-1" style={{ backgroundColor: c, color: getContrastingTextColor(c), borderColor: 'transparent' }}>
-                        {c}
-                        <button type="button" className="opacity-80 hover:opacity-100" onClick={() => removeColor(c)}>×</button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input placeholder="e.g., Pink" onKeyDown={(e) => { if (e.key==='Enter'){ e.preventDefault(); const input=e.target as HTMLInputElement; addColor(input.value); input.value='' } }} className="flex-1" />
-                    <Button type="button" variant="outline" onClick={(e) => { const i=(e.currentTarget.parentElement?.querySelector('input')) as HTMLInputElement|null; if(i){ addColor(i.value); i.value='' } }} className="w-full sm:w-auto">Add Color</Button>
-                  </div>
-                </div>
+              {variants.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No variants added yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {variants.map((variant) => (
+                    <div key={variant.id} className="rounded-lg border p-3 space-y-3 bg-slate-50/60">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1 space-y-1">
+                          <Label>SKU</Label>
+                          <Input
+                            value={variant.sku || ""}
+                            onChange={(e) => updateVariant(variant.id, "sku", e.target.value)}
+                            placeholder="SKU"
+                            className="h-10"
+                          />
+                        </div>
+                        <div className="w-full sm:w-32 space-y-1">
+                          <Label>Price</Label>
+                          <Input
+                            type="number"
+                            value={variant.price ?? ""}
+                            onChange={(e) => updateVariant(variant.id, "price", e.target.value)}
+                            className="h-10"
+                          />
+                        </div>
+                        <div className="w-full sm:w-28 space-y-1">
+                          <Label>Stock</Label>
+                          <Input
+                            type="number"
+                            value={variant.stock ?? ""}
+                            onChange={(e) => updateVariant(variant.id, "stock", e.target.value)}
+                            className="h-10"
+                          />
+                        </div>
+                        <div className="w-full sm:w-36 space-y-1">
+                          <Label>Status</Label>
+                          <Select
+                            value={variant.status || "active"}
+                            onValueChange={(val) => updateVariant(variant.id, "status", val)}
+                          >
+                            <SelectTrigger className="h-10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="draft">Draft</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
 
-                {/* Sizes */}
-                <div className="mb-4">
-                  <Label className="text-sm mb-2 block">Size Options</Label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {['XS','S','M','L','XL','XXL'].map((s) => {
-                      const active = Array.isArray(formData.attributes.sizes) && formData.attributes.sizes.includes(s)
-                      return (
-                        <Button key={s} type="button" variant={active ? 'default' : 'outline'} size="sm" onClick={() => toggleSize(s)}>{s}</Button>
-                      )
-                    })}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input placeholder="Custom sizes (comma separated)" onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const vals=(e.target as HTMLInputElement).value.split(',').map(v=>v.trim()).filter(Boolean); vals.forEach(v=>toggleSize(v)); (e.target as HTMLInputElement).value='' } }} className="w-full" />
-                  </div>
-                </div>
+                      <div className="space-y-1">
+                        <Label>Attributes (e.g. color=red, size=M)</Label>
+                        <Input
+                          value={variant.attrInput || ""}
+                          onChange={(e) => updateVariant(variant.id, "attrInput", e.target.value)}
+                          placeholder="color=red, size=M"
+                          className="h-10"
+                        />
+                      </div>
 
-                {/* Weight */}
-                <div className="mb-2">
-                  <Label className="text-sm mb-2 block">Weight</Label>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Input
-                      placeholder="e.g., 1.2"
-                      className="flex-1 sm:w-28"
-                      value={weightVal}
-                      onChange={(e) => { setWeightVal(e.target.value); setWeight(e.target.value, weightUnit) }}
-                    />
-                    <select
-                      id="edit-weight-unit"
-                      className="border rounded px-2 w-full sm:w-auto"
-                      value={weightUnit}
-                      onChange={(e) => { const u = e.target.value as "kg"|"g"|"lb"; setWeightUnit(u); setWeight(weightVal, u) }}
-                    >
-                      <option value="kg">kg</option>
-                      <option value="g">g</option>
-                      <option value="lb">lb</option>
-                    </select>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">Saved as a simple string (e.g., "1.2 kg").</p>
+                      <div className="flex justify-end">
+                        <Button variant="ghost" size="sm" onClick={() => removeVariant(variant.id)}>
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
 
-              {/* Custom attributes editor */}
-              <AttributeEditor attributes={formData.attributes} excludeKeys={["price_unit","stock_unit"]} onChange={(next) => setFormData({ ...formData, attributes: next })} />
+              <Button type="button" variant="outline" onClick={addVariant} className="w-full">
+                Add Variant
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -502,6 +634,14 @@ export default function EditProductPage() {
           </Card>
         </div>
       </div>
+
+      {/* Variations Drawer */}
+      <ProductVariationsDrawer
+        open={variationsDrawerOpen}
+        onOpenChange={setVariationsDrawerOpen}
+        attributes={formData.attributes}
+        onSave={handleVariationsSave}
+      />
     </div>
   )
 }

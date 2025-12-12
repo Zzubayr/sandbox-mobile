@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useTheme } from "@/lib/theme-context"
-import { Plus, Edit, Trash2, Package, Search, Filter, Eye, EyeOff } from "lucide-react"
+import { Plus, Edit, Trash2, Package, Search, Filter, Eye, EyeOff, Copy, MoreHorizontal } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { toImageUrl } from "@/lib/image-utils"
@@ -17,10 +16,18 @@ import { ProductGridSkeleton } from "@/components/ui/loading-skeletons"
 import { CategoryManager } from "@/components/dashboard/category-manager"
 import { toastHelpers } from "@/lib/toast-helpers"
 import type { Vendor, Product, Category } from "@/lib/types"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function ProductsPage() {
   const router = useRouter()
-  const { colors } = useTheme()
   const [vendor, setVendor] = useState<Vendor | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -29,6 +36,7 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [showInactive, setShowInactive] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; productId: string | null; productTitle: string }>({
     open: false,
     productId: null,
@@ -40,11 +48,16 @@ export default function ProductsPage() {
     productTitle: "",
     newStatus: ""
   })
+  const [adjustDialog, setAdjustDialog] = useState<{ open: boolean; productId: string | null; productTitle: string }>({ open: false, productId: null, productTitle: "" })
+  const [adjustValue, setAdjustValue] = useState("0")
   const [actionLoading, setActionLoading] = useState(false)
+  const [movementDialog, setMovementDialog] = useState<{ open: boolean; productId: string | null; productTitle: string }>({ open: false, productId: null, productTitle: "" })
+  const [movementLoading, setMovementLoading] = useState(false)
+  const [movements, setMovements] = useState<Array<{ id: string; type: string; quantity: number; created_at?: string; note?: string }>>([])
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [showArchived])
 
   const loadData = async () => {
     try {
@@ -55,7 +68,7 @@ export default function ProductsPage() {
       setVendor(vendJson.vendor)
 
       const [prodRes, catRes] = await Promise.all([
-        fetch('/api/dashboard/products', { cache: 'no-store' }),
+        fetch(`/api/dashboard/products?includeArchived=${showArchived}`, { cache: 'no-store' }),
         fetch('/api/dashboard/categories', { cache: 'no-store' })
       ])
       const prodJson = prodRes.ok ? await prodRes.json() : { products: [] }
@@ -69,27 +82,45 @@ export default function ProductsPage() {
     }
   }
 
-  const deleteProduct = async (productId: string) => {
-    if (!vendor) return
+  const handleDeleteClick = (productId: string, productTitle: string) => {
+    setDeleteDialog({ open: true, productId, productTitle })
+  }
 
+  const archiveProduct = async (productId: string, productTitle: string) => {
+    if (!vendor) return
     setActionLoading(true)
     try {
       const resp = await fetch(`/api/dashboard/products/${productId}`, { method: 'DELETE' })
       if (!resp.ok) throw new Error('Failed')
-
-      setProducts(products.filter(p => p.id !== productId))
+      setProducts(products.map(p => p.id === productId ? { ...p, is_archived: true, status: 'inactive' as any } : p))
+      toastHelpers.success(`Archived "${productTitle}"`)
       setDeleteDialog({ open: false, productId: null, productTitle: "" })
-      toastHelpers.productDeleted(deleteDialog.productTitle)
     } catch (error) {
-      console.error('Error deleting product:', error)
-      toastHelpers.deleteError('Failed to delete product. Please try again.')
+      console.error('Error archiving product:', error)
+      toastHelpers.deleteError('Failed to archive product. Please try again.')
     } finally {
       setActionLoading(false)
     }
   }
 
-  const handleDeleteClick = (productId: string, productTitle: string) => {
-    setDeleteDialog({ open: true, productId, productTitle })
+  const restoreProduct = async (productId: string, productTitle: string) => {
+    if (!vendor) return
+    setActionLoading(true)
+    try {
+      const resp = await fetch(`/api/dashboard/products/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_archived: false, status: 'draft' })
+      })
+      if (!resp.ok) throw new Error('Failed')
+      setProducts(products.map(p => p.id === productId ? { ...p, is_archived: false, status: 'draft' as any } : p))
+      toastHelpers.success(`Restored "${productTitle}"`)
+    } catch (error) {
+      console.error('Error restoring product:', error)
+      toastHelpers.saveError('Failed to restore product. Please try again.')
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   const toggleProductStatus = async (productId: string, currentStatus: string) => {
@@ -122,15 +153,90 @@ export default function ProductsPage() {
     setStatusDialog({ open: true, productId, productTitle, newStatus })
   }
 
+  const handleDuplicate = async (productId: string) => {
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/dashboard/products/${productId}/duplicate`, {
+        method: 'POST'
+      })
+      
+      if (!res.ok) throw new Error('Duplicate failed')
+      
+      const data = await res.json()
+      toastHelpers.success('Product duplicated successfully')
+      
+      // Redirect to edit page of new product
+      router.push(`/dashboard/products/${data.productId}/edit`)
+    } catch (error) {
+      console.error('Error duplicating product:', error)
+      toastHelpers.saveError('Failed to duplicate product')
+      setActionLoading(false)
+    }
+  }
+
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || product.status === statusFilter
     const matchesCategory = categoryFilter === "all" || product.category_id === categoryFilter
-    const matchesVisibility = showInactive || product.status === "active"
+    const matchesVisibility = (showInactive || product.status === "active") && (showArchived || !product.is_archived)
 
     return matchesSearch && matchesStatus && matchesCategory && matchesVisibility
   })
+
+  const openAdjustDialog = (productId: string, productTitle: string) => {
+    setAdjustValue("0")
+    setAdjustDialog({ open: true, productId, productTitle })
+  }
+
+  const submitAdjust = async () => {
+    if (!adjustDialog.productId) return
+    const delta = Number(adjustValue)
+    if (!Number.isFinite(delta) || delta === 0) {
+      toastHelpers.saveError("Enter a non-zero number to adjust stock")
+      return
+    }
+    setActionLoading(true)
+    try {
+      const resp = await fetch(`/api/dashboard/products/${adjustDialog.productId}/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta })
+      })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data?.error || 'Failed')
+      setProducts(products.map(p => p.id === adjustDialog.productId ? { ...p, stock: data.stock } : p))
+      toastHelpers.success(`Stock updated for "${adjustDialog.productTitle}"`)
+      setAdjustDialog({ open: false, productId: null, productTitle: "" })
+    } catch (error) {
+      console.error('Error adjusting stock:', error)
+      toastHelpers.saveError('Failed to adjust stock')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const openMovements = async (productId: string, productTitle: string) => {
+    setMovementDialog({ open: true, productId, productTitle })
+    setMovementLoading(true)
+    try {
+      const resp = await fetch(`/api/dashboard/products/${productId}/movements`, { cache: 'no-store' })
+      const data = await resp.json()
+      if (!resp.ok) throw new Error(data?.error || 'Failed')
+      setMovements((data.movements || []).map((m: any) => ({
+        id: m.id || m._id || Math.random().toString(36).slice(2),
+        type: m.type,
+        quantity: m.quantity,
+        created_at: m.created_at,
+        note: m.note
+      })))
+    } catch (error) {
+      console.error('Error loading movements:', error)
+      toastHelpers.saveError('Failed to load history')
+    } finally {
+      setMovementLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -219,6 +325,16 @@ export default function ProductsPage() {
               <span className="hidden sm:inline">{showInactive ? "Hide Inactive" : "Show Inactive"}</span>
               <span className="sm:hidden">{showInactive ? "Hide" : "Show"}</span>
             </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowArchived(!showArchived)}
+              className="flex items-center gap-2 h-11 sm:col-span-2 lg:col-span-1"
+            >
+              {showArchived ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              <span className="hidden sm:inline">{showArchived ? "Hide Archived" : "Show Archived"}</span>
+              <span className="sm:hidden">{showArchived ? "Hide" : "Show"}</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -259,6 +375,11 @@ export default function ProductsPage() {
                   >
                     {product.status}
                   </Badge>
+                  {product.is_archived && (
+                    <Badge variant="outline" className="ml-2 border-slate-300 text-slate-600 bg-white">
+                      Archived
+                    </Badge>
+                  )}
                 </div>
               </div>
               
@@ -270,6 +391,28 @@ export default function ProductsPage() {
                     <Badge variant="outline" className="w-fit">
                       {product.category.name}
                     </Badge>
+                  )}
+                  {Array.isArray((product as any).variants) && (product as any).variants.length > 0 && (
+                    <div className="space-y-1 rounded-md border border-slate-100 bg-slate-50 p-2">
+                      <p className="text-xs font-semibold text-slate-600">Variants</p>
+                      {(product as any).variants.slice(0, 3).map((v: any, idx: number) => (
+                        <div key={v.id || idx} className="flex items-center justify-between text-xs text-slate-700">
+                          <span className="truncate max-w-[180px]">
+                            {v.sku || 'Variant'} {v.attributes ? `• ${Object.entries(v.attributes).map(([k, val]) => `${k}:${val}`).join(', ')}` : ''}
+                          </span>
+                          <span className="font-semibold">{typeof v.stock === 'number' ? v.stock : 0}</span>
+                        </div>
+                      ))}
+                      {(product as any).variants.length > 3 && (
+                        <p className="text-[11px] text-slate-500">+{(product as any).variants.length - 3} more</p>
+                      )}
+                    </div>
+                  )}
+                  {product.safety_stock !== undefined && product.stock <= (product.safety_stock || 0) && !product.is_archived && (
+                    <Badge className="w-fit bg-amber-500 text-white">Low stock</Badge>
+                  )}
+                  {product.allow_backorder && (
+                    <Badge variant="outline" className="w-fit border-blue-200 text-blue-700 bg-blue-50">Backorders allowed</Badge>
                   )}
                 </div>
               </CardHeader>
@@ -368,49 +511,80 @@ export default function ProductsPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <div className="flex items-center gap-2 pt-2">
                     <Button 
                       size="sm" 
                       variant="outline" 
                       asChild
-                      className="flex-1 h-10"
+                      className="flex-1 h-9 bg-white hover:bg-slate-50 border-slate-200"
+                      disabled={product.is_archived}
                     >
                       <Link href={`/dashboard/products/${product.id}/edit`}>
-                        <Edit className="h-4 w-4 mr-1" />
-                        <span className="hidden sm:inline">Edit</span>
+                        <Edit className="h-4 w-4 mr-2 text-slate-500" />
+                        <span>Edit</span>
                       </Link>
                     </Button>
-                    
+
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleStatusClick(product.id, product.title, product.status)}
-                      className="flex-1 h-10"
-                      disabled={actionLoading}
+                      onClick={() => handleDuplicate(product.id)}
+                      className="flex-1 h-9 bg-white hover:bg-slate-50 border-slate-200"
+                      disabled={actionLoading || product.is_archived}
+                      title="Duplicate Product"
                     >
-                      {product.status === 'active' ? (
-                        <>
-                          <EyeOff className="h-4 w-4 mr-1" />
-                          <span className="hidden sm:inline">Hide</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-4 w-4 mr-1" />
-                          <span className="hidden sm:inline">Show</span>
-                        </>
-                      )}
+                      <Copy className="h-4 w-4 mr-2 text-slate-500" />
+                      <span>Duplicate</span>
                     </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDeleteClick(product.id, product.title)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 h-10 min-w-[44px]"
-                      disabled={actionLoading}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">More actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        {!product.is_archived && (
+                          <DropdownMenuItem onClick={() => handleStatusClick(product.id, product.title, product.status)}>
+                            {product.status === 'active' ? (
+                              <>
+                                <EyeOff className="mr-2 h-4 w-4" />
+                                <span>Hide from Store</span>
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="mr-2 h-4 w-4" />
+                                <span>Show in Store</span>
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => openAdjustDialog(product.id, product.title)}>
+                          <span>Adjust Stock</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openMovements(product.id, product.title)}>
+                          <span>Stock History</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {product.is_archived ? (
+                          <DropdownMenuItem onClick={() => restoreProduct(product.id, product.title)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>Restore Product</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem 
+                            className="text-red-600 focus:text-red-600"
+                            onClick={() => handleDeleteClick(product.id, product.title)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Archive Product</span>
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>
@@ -450,7 +624,7 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-800">Total Products</p>
-                <p className="text-2xl font-bold text-blue-900">{products.length}</p>
+                <p className="text-2xl font-bold text-blue-900">{products.filter(p => !p.is_archived).length}</p>
               </div>
               <Package className="h-8 w-8 text-blue-600" />
             </div>
@@ -463,7 +637,7 @@ export default function ProductsPage() {
               <div>
                 <p className="text-sm font-medium text-green-800">Active Products</p>
                 <p className="text-2xl font-bold text-green-900">
-                  {products.filter(p => p.status === 'active').length}
+                  {products.filter(p => p.status === 'active' && !p.is_archived).length}
                 </p>
               </div>
               <Eye className="h-8 w-8 text-green-600" />
@@ -477,7 +651,7 @@ export default function ProductsPage() {
               <div>
                 <p className="text-sm font-medium text-yellow-800">Draft Products</p>
                 <p className="text-2xl font-bold text-yellow-900">
-                  {products.filter(p => p.status === 'draft').length}
+                  {products.filter(p => p.status === 'draft' && !p.is_archived).length}
                 </p>
               </div>
               <Edit className="h-8 w-8 text-yellow-600" />
@@ -491,7 +665,7 @@ export default function ProductsPage() {
               <div>
                 <p className="text-sm font-medium text-purple-800">Total Stock</p>
                 <p className="text-2xl font-bold text-purple-900">
-                  {products.reduce((sum, p) => sum + p.stock, 0)}
+                  {products.filter(p => !p.is_archived).reduce((sum, p) => sum + p.stock, 0)}
                 </p>
               </div>
               <Package className="h-8 w-8 text-purple-600" />
@@ -504,14 +678,34 @@ export default function ProductsPage() {
       <ConfirmationDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
-        title="Delete Product"
-        description={`Are you sure you want to delete "${deleteDialog.productTitle}"? This action cannot be undone.`}
-        confirmText="Delete"
+        title="Archive Product"
+        description={`Are you sure you want to archive "${deleteDialog.productTitle}"? You can restore it later.`}
+        confirmText="Archive"
         cancelText="Cancel"
         variant="destructive"
-        onConfirm={() => deleteDialog.productId && deleteProduct(deleteDialog.productId)}
+        onConfirm={() => deleteDialog.productId && archiveProduct(deleteDialog.productId, deleteDialog.productTitle)}
         loading={actionLoading}
       />
+
+      <ConfirmationDialog
+        open={adjustDialog.open}
+        onOpenChange={(open) => setAdjustDialog({ ...adjustDialog, open })}
+        title="Adjust Stock"
+        description={`Enter a positive number to add stock or negative to remove for "${adjustDialog.productTitle}".`}
+        confirmText="Update Stock"
+        cancelText="Cancel"
+        onConfirm={submitAdjust}
+        loading={actionLoading}
+      >
+        <div className="pt-4">
+          <Input
+            type="number"
+            value={adjustValue}
+            onChange={(e) => setAdjustValue(e.target.value)}
+            placeholder="e.g. 5 or -3"
+          />
+        </div>
+      </ConfirmationDialog>
 
       <ConfirmationDialog
         open={statusDialog.open}
@@ -523,6 +717,44 @@ export default function ProductsPage() {
         onConfirm={() => statusDialog.productId && toggleProductStatus(statusDialog.productId, statusDialog.newStatus === 'active' ? 'inactive' : 'active')}
         loading={actionLoading}
       />
+
+      <Dialog open={movementDialog.open} onOpenChange={(open) => setMovementDialog({ ...movementDialog, open })}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Stock History</DialogTitle>
+            <DialogDescription>{movementDialog.productTitle || 'Product'}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {movementLoading ? (
+              <p className="text-sm text-slate-500">Loading history...</p>
+            ) : movements.length === 0 ? (
+              <p className="text-sm text-slate-500">No movements recorded yet.</p>
+            ) : (
+              movements.map((m) => (
+                <div key={m.id} className="flex items-start justify-between rounded-md border p-2">
+                  <div>
+                    <p className="font-medium text-slate-800 capitalize">{m.type}</p>
+                    {m.note && <p className="text-xs text-slate-500 mt-1">{m.note}</p>}
+                    {m.created_at && (
+                      <p className="text-xs text-slate-400 mt-1">
+                        {new Date(m.created_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <span className={`text-sm font-semibold ${m.quantity < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {m.quantity > 0 ? '+' : ''}{m.quantity}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMovementDialog({ open: false, productId: null, productTitle: "" })}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

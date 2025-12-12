@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/session";
 import { connectToDatabase } from "@/lib/db/connection";
 import Vendor from "@/lib/db/models/vendor";
 import { v2 as cloudinary } from 'cloudinary'
+import { sendVendorWelcomeEmail } from "@/lib/mail";
 
 function shapeId<T extends { _id?: any }>(doc: T) {
   if (!doc) return doc as any;
@@ -180,6 +181,13 @@ export async function POST(request: NextRequest) {
       business_subcategories: sanitizeStrArray(business_subcategories ?? body?.subcategories),
       is_active: true,
     });
+
+    const toEmail = created.contact_email || created.email;
+    sendVendorWelcomeEmail({
+      to: toEmail,
+      storeName: created.store_name,
+    }).catch((err) => console.error("Send welcome email failed", err));
+
     return NextResponse.json({ vendor: shapeId(created.toJSON()) });
   } catch (err: any) {
     if (err && typeof err.message === 'string' && err.message.toLowerCase().includes('unauthorized')) {
