@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/lib/theme-context"
-import { Home, Package, ShoppingCart, Settings, BarChart3, HelpCircle, LogOut, Store, Sparkles, Clock, Image as ImageIcon } from "lucide-react"
+import { Home, Package, ShoppingCart, Settings, BarChart3, HelpCircle, LogOut, Store, Sparkles, Clock, Image as ImageIcon, Boxes } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
@@ -21,6 +21,11 @@ const sidebarItems = [
     title: "Products",
     href: "/dashboard/products",
     icon: Package,
+  },
+  {
+    title: "Inventory",
+    href: "/dashboard/inventory",
+    icon: Boxes,
   },
   {
     title: "Requests",
@@ -91,6 +96,7 @@ export function Sidebar({ className, storeName, isService }: SidebarProps) {
               const dataAttr =
                 item.title === "Dashboard" ? { "data-tour": "sidebar-dashboard" } :
                 item.title === "Products" ? { "data-tour": "sidebar-products" } :
+                item.title === "Inventory" ? { "data-tour": "sidebar-inventory" } :
                 item.title === "Requests" ? { "data-tour": "sidebar-requests" } :
                 item.title === "Analytics" ? { "data-tour": "sidebar-analytics" } :
                 item.title === "Settings" ? { "data-tour": "sidebar-settings" } :

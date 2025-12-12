@@ -47,20 +47,14 @@ export default async function StorePage({ params, searchParams }: StorePageProps
     return <PendingApprovalPage vendor={vendor} />
   }
 
-  // Service storefront
-  if (vendor.business_type === 'services') {
-    return (
-      <div className="min-h-screen bg-background pb-20 md:pb-0">
-        <StorefrontHeader vendor={vendor} />
-        <div className="container mx-auto px-4 py-6 md:py-8">
-          <ServiceStorefront vendor={vendor} />
-        </div>
-      </div>
-    )
+  // If this is a services business, show the dedicated services storefront
+  if (vendor.business_type === "services") {
+    return <ServiceStorefront vendor={vendor} />
   }
 
-  // Get products and categories
   const categoryIdFilter = selectedCategoryParam ? String(selectedCategoryParam) : undefined
+
+  // Get products and categories
   const [productDocs, categoryDocs] = await Promise.all([
     Product.find({
       vendor_id: vendorDoc._id,
@@ -95,6 +89,7 @@ export default async function StorePage({ params, searchParams }: StorePageProps
             className="absolute inset-0 flex items-center justify-center"
             style={{ background: `linear-gradient(135deg, ${colors.primary}E6 0%, ${colors.dark}E6 100%)` }}
           >
+            <div className="absolute inset-0 bg-black/35 md:bg-black/30 lg:bg-black/25" />
             <div className="text-center text-white px-4">
               <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold mb-2 text-balance">{vendor.store_name}</h1>
               {vendor.description && (
@@ -262,4 +257,3 @@ export default async function StorePage({ params, searchParams }: StorePageProps
     </div>
   )
 }
-

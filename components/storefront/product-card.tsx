@@ -1,11 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Heart, ShoppingCart, Package } from "lucide-react"
+import { Heart, ShoppingCart, Package, Eye } from "lucide-react"
 import Image from "next/image"
 import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
@@ -13,6 +12,7 @@ import type { Product, Vendor } from "@/lib/types"
 import { getThemeColors } from "@/lib/theme-colors"
 import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
+import { cn } from "@/lib/utils"
 
 interface ProductCardProps {
   product: Product
@@ -28,26 +28,17 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
   const rawUnit = (product as any)?.attributes?.price_unit || product.unit
   const unitLabel = (() => {
     switch (rawUnit) {
-      case 'yard':
-        return 'yards'
-      case 'meter':
-        return 'meters'
-      case 'lb':
-        return 'lbs'
-      case 'piece':
-        return 'pieces'
-      case 'set':
-        return 'sets'
-      case 'box':
-        return 'boxes'
-      case 'pack':
-        return 'packs'
-      case 'dozen':
-        return 'dozen'
-      case 'kg':
+      case 'yard': return 'yards'
+      case 'meter': return 'meters'
+      case 'lb': return 'lbs'
+      case 'piece': return 'pieces'
+      case 'set': return 'sets'
+      case 'box': return 'boxes'
+      case 'pack': return 'packs'
+      case 'dozen': return 'dozen'
+      case 'kg': 
       case 'unit':
-      default:
-        return rawUnit || undefined
+      default: return rawUnit || undefined
     }
   })()
 
@@ -69,84 +60,112 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
   }
 
   const isInWishlist = wishlistState.items.some((item: Product) => item.id === product.id)
+  const isOutOfStock = product.stock === 0
 
   return (
-    <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300 border border-slate-200 bg-white">
-      <Link href={`/store/${vendor.store_slug}/product/${product.id}`}>
-        <div className="aspect-square relative bg-slate-50 overflow-hidden">
+    <div className="group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 ring-1 ring-slate-200 hover:ring-slate-300 flex flex-col h-full">
+      <Link href={`/store/${vendor.store_slug}/product/${product.id}`} className="block relative flex-1">
+        {/* Image Container - Full Bleed */}
+        <div className="relative aspect-[4/5] overflow-hidden bg-slate-50">
           {product.images && product.images.length > 0 ? (
             <Image
               src={toImageUrl(product.images[0] as any) || "/placeholder.svg"}
               alt={product.title}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className={cn(
+                "object-cover transition-transform duration-700 ease-out md:group-hover:scale-110",
+                isOutOfStock ? "opacity-60 grayscale" : ""
+              )}
               priority={priority}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-400">
-              <Package className="h-12 w-12" />
+            <div className="flex items-center justify-center h-full text-slate-300">
+              <Package className="h-16 w-16" />
             </div>
           )}
-          {product.stock === 0 && (
-            <div className="absolute inset-0 bg-slate-900/80 flex items-center justify-center">
-              <Badge variant="secondary" className="text-xs bg-white text-slate-900">
-                Out of Stock
-              </Badge>
-            </div>
+
+          {/* Overlays */}
+          {isOutOfStock && (
+             <div className="absolute inset-x-0 bottom-4 text-center z-10">
+               <span className="inline-block px-3 py-1 bg-slate-900/90 text-white text-xs font-bold uppercase tracking-wider rounded-full shadow-md backdrop-blur-md">
+                 Sold Out
+               </span>
+             </div>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`absolute top-3 right-3 bg-white/90 hover:bg-white opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-sm ${
-              isInWishlist ? 'opacity-100' : ''
-            }`}
+
+           {/* DESKTOP ONLY: Quick Actions (Slide up on hover) */}
+           {!isOutOfStock && (
+             <div className="hidden md:block absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/60 to-transparent">
+                 <Button 
+                   onClick={handleAddToCart}
+                   className="w-full bg-white text-slate-900 hover:bg-slate-100 shadow-lg border-none h-11 font-medium rounded-xl"
+                 >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Add to Cart
+                 </Button>
+             </div>
+           )}
+
+          {/* Wishlist Button */}
+          <button
             onClick={handleWishlistToggle}
+            className="absolute top-3 right-3 p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 z-20 group/heart"
           >
-            <Heart className={`h-4 w-4 ${isInWishlist ? 'text-red-500 fill-red-500' : 'text-slate-600'}`} />
-          </Button>
+            <Heart 
+              className={cn(
+                "h-4 w-4 transition-colors", 
+                isInWishlist ? "text-red-500 fill-red-500" : "text-slate-600 group-hover/heart:text-red-500"
+              )} 
+            />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-3">
+           <div>
+              <h3 className="font-bold text-slate-900 leading-snug line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors" style={{ '--primary': colors.primary } as any}>
+                {product.title}
+              </h3>
+              {product.description && (
+                <p className="text-xs text-slate-500 line-clamp-1 mt-1 opacity-80">
+                  {product.description}
+                </p>
+              )}
+           </div>
+
+           <div className="flex items-center justify-between">
+              <div>
+                 <div className="font-bold text-lg text-slate-900 flex items-baseline gap-1">
+                    ₦{product.price.toLocaleString()}
+                    {unitLabel && (
+                       <span className="text-xs text-slate-400 font-normal">/{unitLabel}</span>
+                    )}
+                 </div>
+                 {product.stock > 0 && product.stock < 10 && (
+                    <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm inline-block mt-0.5">
+                       Low Stock
+                    </span>
+                 )}
+              </div>
+           </div>
         </div>
       </Link>
 
-      <CardContent className="p-4">
-        <div className="space-y-3">
-          <Link href={`/store/${vendor.store_slug}/product/${product.id}`}>
-            <h3 className="font-bold line-clamp-2 hover:text-slate-600 transition-colors text-xl leading-tight text-slate-900">
-              {product.title}
-            </h3>
-          </Link>
-          {product.description && (
-            <p className="text-xs text-slate-500 line-clamp-2">
-              {product.description}
-            </p>
-          )}
-          <div className="flex sm:items-center sm:justify-between gap-3 flex-col sm:flex-row">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-1">
-                <p className="text-lg font-bold text-slate-900">
-                  ₦{product.price.toLocaleString()}
-                  {unitLabel && (
-                    <span className="text-sm text-slate-600 font-medium">/{unitLabel}</span>
-                  )}
-                </p>
-              </div>
-              {product.stock > 0 && product.stock < 5 && (
-                <p className="text-xs text-amber-700 mt-1">
-                  Only {product.stock} left
-                </p>
-              )}
-            </div>
-            <Button
-              size="sm"
-              disabled={product.stock === 0}
-              onClick={handleAddToCart}
-              className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-3 py-2 min-w-[80px] flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ShoppingCart className="h-3 w-3 mr-1" />
-              Add
-            </Button>
-          </div>
+      {/* MOBILE ONLY: Footer with Add to Cart - Always Visible */}
+      {!isOutOfStock && (
+        <div className="px-4 pb-4 pt-0 mt-auto md:hidden">
+          <Button 
+            onClick={handleAddToCart}
+            className="w-full shadow-sm active:scale-95 transition-all duration-200 font-medium rounded-xl text-white border-0 h-10"
+            style={{ 
+              backgroundColor: colors.primary,
+            } as any}
+          >
+             <ShoppingCart className="w-4 h-4 mr-2" />
+             Add
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }

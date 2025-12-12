@@ -33,17 +33,30 @@ async function sendMail(to: string | string[], subject: string, html: string) {
 export async function sendVendorWelcomeEmail({
   to,
   storeName,
+  businessType = "products",
 }: {
   to?: string | null
   storeName: string
+  businessType?: "products" | "services"
 }) {
   if (!to) return
   const dashboardLink = `${getBaseUrl()}/dashboard`
+  const settingsLink = `${getBaseUrl()}/dashboard/settings`
+  const addLink =
+    businessType === "services"
+      ? `${getBaseUrl()}/dashboard/rates`
+      : `${getBaseUrl()}/dashboard/products/new`
+  const addLabel = businessType === "services" ? "add your first service" : "add your first product"
   const subject = `Welcome to Ummah Square, ${storeName}!`
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6">
       <h2 style="margin: 0 0 12px;">Assalamu Alaikum ${storeName}, welcome aboard!</h2>
-      <p>Your vendor profile has been created. You can now set up your store, add products or services, and start receiving requests.</p>
+      <p>Your vendor profile has been created. To get approved faster, please:</p>
+      <ol style="padding-left:20px; margin: 8px 0 12px;">
+        <li>Upload your business logo and banner in <a href="${settingsLink}">Settings</a>.</li>
+        <li>Visit your dashboard and ${addLabel}.</li>
+      </ol>
+      <p>Once these are in place, our team will review and approve your business.</p>
       <p>
         <a href="${dashboardLink}" style="background:#0f172a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Go to your dashboard</a>
       </p>

@@ -16,7 +16,8 @@ import {
   Calendar,
   BarChart3,
   PieChart,
-  Activity
+  Activity,
+  Layers
 } from "lucide-react"
 import type { Vendor, Request, Product } from "@/lib/types"
 
@@ -40,6 +41,12 @@ export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState("30")
+  const [inventorySummary, setInventorySummary] = useState<{
+    available: number
+    reserved: number
+    backorderable: number
+    lowStock: Array<{ id: string; title: string; available: number }>
+  }>({ available: 0, reserved: 0, backorderable: 0, lowStock: [] })
 
   useEffect(() => {
     loadAnalyticsData()
@@ -107,6 +114,34 @@ export default function AnalyticsPage() {
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 5)
 
+      // Inventory summary
+      const invAvailable = products
+        .filter((p: any) => !p.is_archived)
+        .reduce((sum: number, p: any) => {
+          const reserved = typeof p.reserved_stock === "number" ? p.reserved_stock : 0
+          return sum + Math.max(0, (p.stock || 0) - reserved)
+        }, 0)
+      const invReserved = products
+        .filter((p: any) => !p.is_archived)
+        .reduce((sum: number, p: any) => sum + (p.reserved_stock || 0), 0)
+      const backorderable = products.filter((p: any) => p.allow_backorder && !p.is_archived).length
+      const lowStock = products
+        .filter((p: any) => !p.is_archived)
+        .map((p: any) => {
+          const reserved = p.reserved_stock || 0
+          const available = Math.max(0, (p.stock || 0) - reserved)
+          return { id: p.id, title: p.title, available, safety: p.safety_stock || 0 }
+        })
+        .filter((p) => p.available <= p.safety || p.available <= 5)
+        .sort((a, b) => a.available - b.available)
+        .slice(0, 5)
+      setInventorySummary({
+        available: invAvailable,
+        reserved: invReserved,
+        backorderable,
+        lowStock,
+      })
+
       // Calculate monthly data
       const monthlyData = []
       for (let i = 11; i >= 0; i--) {
@@ -171,7 +206,7 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-bold text-slate-800">Analytics</h1>
           <p className="text-slate-600">Track your store performance and insights</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -232,6 +267,46 @@ export default function AnalyticsPage() {
                 <p className="text-2xl font-bold text-orange-900">{analyticsData.conversionRate.toFixed(1)}%</p>
               </div>
               <TrendingUp className="h-8 w-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Inventory Snapshot */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-[#E8F1F9] to-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-[#1F3E5C]">Available Stock</p>
+                <p className="text-2xl font-bold text-[#2B6DA9]">{inventorySummary.available}</p>
+                <p className="text-xs text-slate-500">Excludes reserved</p>
+              </div>
+              <Layers className="h-8 w-8 text-[#2B6DA9]" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Reserved Stock</p>
+                <p className="text-2xl font-bold text-slate-900">{inventorySummary.reserved}</p>
+                <p className="text-xs text-slate-500">On hold for pending requests</p>
+              </div>
+              <Badge className="bg-[#2B6DA9] text-white">Holds</Badge>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-700">Backorder-enabled</p>
+                <p className="text-2xl font-bold text-blue-900">{inventorySummary.backorderable}</p>
+                <p className="text-xs text-slate-500">Products that allow backorders</p>
+              </div>
+              <Badge className="bg-white text-blue-700 border border-blue-200">Backorder</Badge>
             </div>
           </CardContent>
         </Card>
@@ -362,37 +437,34 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Monthly Trends */}
+            {/* Monthly Trends (Summary) */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-600" />
-            Monthly Trends
+            Monthly Trends (Summary)
           </CardTitle>
-          <CardDescription>Request and revenue trends over time</CardDescription>
+          <CardDescription>Last 6 months condensed</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {analyticsData.monthlyData.map((month, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-medium w-16">{month.month}</span>
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm">{month.requests} requests</span>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {analyticsData.monthlyData.slice(-6).map((month, index) => (
+              <div key={index} className="rounded-lg border p-3 bg-slate-50 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-800">{month.month}</span>
+                  <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
+                    {month.requests} req
+                  </Badge>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm text-slate-700">
                   <DollarSign className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm font-semibold">₦{month.revenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-semibold">₦{month.revenue.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
             ))}
           </div>
         </CardContent>
-      </Card>
-
-      {/* Recent Activity */}
+      </Card>{/* Recent Activity */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

@@ -186,6 +186,7 @@ export async function POST(request: NextRequest) {
     sendVendorWelcomeEmail({
       to: toEmail,
       storeName: created.store_name,
+      businessType: created.business_type || 'products',
     }).catch((err) => console.error("Send welcome email failed", err));
 
     return NextResponse.json({ vendor: shapeId(created.toJSON()) });

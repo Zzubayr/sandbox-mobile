@@ -58,11 +58,11 @@ export function StorefrontHeader({ vendor, cartItemCount = 0 }: StorefrontHeader
                 <h1 className="text-lg md:text-xl font-bold truncate bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
                   {vendor.store_name}
                 </h1>
-                {vendor.description && (
+                {/* {vendor.description && (
                   <p className="text-xs md:text-sm text-slate-500 truncate hidden sm:block">
                     {vendor.description}
                   </p>
-                )}
+                )} */}
               </div>
             </Link>
           </div>
