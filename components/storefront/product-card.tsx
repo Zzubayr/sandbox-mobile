@@ -4,7 +4,7 @@ import type React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Heart, ShoppingCart, Package, Share2, Link as LinkIcon, Image as ImageIcon, Loader2 } from "lucide-react"
+import { Heart, ShoppingCart, Package, Share2, Link as LinkIcon } from "lucide-react"
 import Image from "next/image"
 import { toImageUrl } from "@/lib/image-utils"
 import Link from "next/link"
@@ -26,7 +26,7 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
   const colors = getThemeColors(vendor.theme_color)
   const { dispatch } = useCart()
   const { dispatch: wishlistDispatch, state: wishlistState } = useWishlist()
-  const shareProps = useProductShare({ product, vendor })
+  const { shareLink } = useProductShare({ product, vendor })
   
   const rawUnit = (product as any)?.attributes?.price_unit || product.unit
   const unitLabel = (() => {
@@ -120,13 +120,9 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
                     e.preventDefault()
                     e.stopPropagation()
                   }}
-                  className="p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 group/share disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="p-2.5 rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 z-20 group/share"
                 >
-                  {shareProps.isGenerating ? (
-                    <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
-                  ) : (
-                    <Share2 className="h-4 w-4 text-slate-600 group-hover/share:text-slate-900" />
-                  )}
+                  <Share2 className="h-4 w-4 text-slate-600 group-hover/share:text-slate-900" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -135,24 +131,12 @@ export function ProductCard({ product, vendor, priority = false }: ProductCardPr
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
-                    shareProps.shareLink()
+                    shareLink()
                   }}
                   className="gap-2"
                 >
                   <LinkIcon className="h-4 w-4" />
                   Share link
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    shareProps.shareImage()
-                  }}
-                  className="gap-2"
-                  disabled={shareProps.isSharing || shareProps.isGenerating}
-                >
-                  {shareProps.isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
-                  {shareProps.isSharing ? "Sharing..." : shareProps.isGenerating ? "Preparing..." : "Share image"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
