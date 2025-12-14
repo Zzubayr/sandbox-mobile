@@ -267,16 +267,18 @@ export default function OnboardingPage() {
                             autoFocus
                         />
                         {formData.store_name && (
-                            <div className="flex items-center justify-between ml-1 mt-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between ml-1 mt-2 gap-2 sm:gap-0">
                                 <p className={`text-sm ${nameAvailable === false ? 'text-red-500' : 'text-slate-400'}`}>
                                     {nameChecking ? 'Checking...' : nameAvailable === false ? 'This name is taken' : 'Good choice!'}
                                 </p>
                                 {nameAvailable !== false && (
-                                    <div className="flex items-center text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
-                                        <span className="font-semibold text-slate-900">
-                                            {generateStoreSlug(formData.store_name)}
-                                        </span>
-                                        <span className="text-slate-400">.ummahsquare.com.ng</span>
+                                    <div className="flex items-center text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded-md max-w-full overflow-x-auto">
+                                        <div className="flex items-center whitespace-nowrap">
+                                            <span className="font-semibold text-slate-900">
+                                                {generateStoreSlug(formData.store_name)}
+                                            </span>
+                                            <span className="text-slate-400">.ummahsquare.com.ng</span>
+                                        </div>
                                     </div>
                                 )}
                             </div>
