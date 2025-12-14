@@ -28,6 +28,7 @@ import { WhatsAppButton } from "@/components/whatsapp/whatsapp-button"
 import { WhatsAppMessageCustomizer } from "@/components/whatsapp/whatsapp-message-customizer"
 import { createDetailedCustomerRequestMessage } from "@/lib/whatsapp"
 import { toastHelpers } from "@/lib/toast-helpers"
+import { getStorePath, getAbsoluteStoreUrl } from "@/lib/url-utils"
 
 export default function CustomerRequestPage() {
   const params = useParams()
@@ -90,7 +91,7 @@ export default function CustomerRequestPage() {
   }
 
   const copyRequestLink = () => {
-    const link = `${window.location.origin}/store/${slug}/request/${requestId}`
+    const link = getAbsoluteStoreUrl(slug, `/request/${requestId}`)
     navigator.clipboard.writeText(link)
     toastHelpers.success("Link Copied", "Request link copied to clipboard!")
   }
@@ -150,7 +151,7 @@ export default function CustomerRequestPage() {
   }
 
   const colors = getThemeColors(vendor.theme_color)
-  const requestUrl = `${window.location.origin}/store/${slug}/request/${requestId}`
+  const requestUrl = getAbsoluteStoreUrl(slug, `/request/${requestId}`)
 
   const whatsappMessage = createDetailedCustomerRequestMessage({
     vendorNumber: vendor.whatsapp_number || "",
@@ -295,7 +296,7 @@ export default function CustomerRequestPage() {
                   </Button>
 
                   <Button variant="outline" asChild className="w-full">
-                    <Link href={`/store/${vendor.store_slug}`}>
+                    <Link href={getStorePath(vendor.store_slug)}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       Visit Store
                     </Link>

@@ -13,6 +13,7 @@ import { getThemeColors } from "@/lib/theme-colors"
 import { WhatsAppButton } from "@/components/whatsapp/whatsapp-button"
 import { WhatsAppContactCard } from "@/components/whatsapp/whatsapp-contact-card"
 import { createDetailedCustomerRequestMessage } from "@/lib/whatsapp"
+import { getStorePath, getAbsoluteStoreUrl } from "@/lib/url-utils"
 
 export default function RequestSuccessPage() {
   const params = useParams()
@@ -95,9 +96,7 @@ export default function RequestSuccessPage() {
 
   const colors = getThemeColors(vendor.theme_color)
 
-  const requestUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/store/${slug}/request/${requestId}`
-    : `/store/${slug}/request/${requestId}`
+  const requestUrl = getAbsoluteStoreUrl(slug, `/request/${requestId}`)
   
   const whatsappMessage = createDetailedCustomerRequestMessage({
     vendorNumber: vendor.whatsapp_number || "",
@@ -182,7 +181,7 @@ export default function RequestSuccessPage() {
             </Button>
 
             <Button asChild className="w-full" size="lg" style={{ backgroundColor: colors.primary }}>
-              <Link href={`/store/${slug}/request/${requestId}`}>
+              <Link href={getStorePath(slug, `/request/${requestId}`)}>
                 <ExternalLink className="mr-2 h-5 w-5" />
                 View Request Details
               </Link>
@@ -190,7 +189,7 @@ export default function RequestSuccessPage() {
 
             <div className="flex gap-4">
               <Button variant="outline" asChild className="flex-1 bg-transparent">
-                <Link href={`/store/${vendor.store_slug}`}>
+                <Link href={getStorePath(vendor.store_slug)}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Store
                 </Link>

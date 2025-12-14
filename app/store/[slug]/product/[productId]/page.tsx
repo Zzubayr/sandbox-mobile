@@ -21,6 +21,7 @@ import { ProductPageSkeleton } from "@/components/ui/loading-skeleton"
 import { getContrastingTextColor } from "@/lib/color-utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useProductShare } from "@/hooks/use-product-share"
+import { getStorePath } from "@/lib/url-utils"
 
 
 export default function ProductPage() {
@@ -86,7 +87,7 @@ export default function ProductPage() {
 
   const handleCheckout = () => {
     if (!vendor) return
-    router.push(`/store/${vendor.store_slug}/checkout`)
+    router.push(getStorePath(vendor.store_slug, "/checkout"))
   }
 
 
@@ -125,7 +126,7 @@ export default function ProductPage() {
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-6">
           <Button variant="ghost" asChild className="mb-4 -ml-4 text-slate-600 hover:text-slate-900">
-            <Link href={`/store/${vendor.store_slug}`}>
+            <Link href={getStorePath(vendor.store_slug)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Store
             </Link>

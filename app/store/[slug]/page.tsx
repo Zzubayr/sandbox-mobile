@@ -169,7 +169,7 @@ export default async function StorePage({ params, searchParams }: StorePageProps
           <div className="mb-6 md:mb-8">
             <h2 className="text-xl md:text-2xl font-bold mb-4">Categories</h2>
             <div className="flex flex-wrap gap-2">
-              <Link href={`/store/${slug}`}>
+              <Link href={getStorePath(slug)}>
                 <Badge
                   variant="outline"
                   className={`cursor-pointer text-xs md:text-sm hover:opacity-90`}
@@ -184,7 +184,7 @@ export default async function StorePage({ params, searchParams }: StorePageProps
               {categories.map((category) => (
                 <Link
                   key={category.id}
-                  href={`/store/${slug}?category=${category.id}`}
+                  href={getStorePath(slug, `?category=${category.id}`)}
                   scroll={false}
                 >
                   <Badge

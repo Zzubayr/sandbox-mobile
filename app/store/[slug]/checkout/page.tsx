@@ -86,7 +86,8 @@ export default function CheckoutPage() {
       const { requestId } = await res.json()
       toastHelpers.requestSubmitted()
       dispatch.clearCart()
-      router.push(`/store/${slug}/request-success?requestId=${requestId}`)
+      const { getStorePath } = require("@/lib/url-utils");
+      router.push(getStorePath(slug, `/request-success?requestId=${requestId}`))
     } catch (error) {
       console.error("Error creating request:", error)
       toastHelpers.error("Request Failed", "Failed to create request. Please try again.")
@@ -132,10 +133,13 @@ export default function CheckoutPage() {
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-4 md:mb-6">
           <Button variant="ghost" asChild className="mb-4 -ml-4">
-            <Link href={`/store/${vendor.store_slug}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Store
-            </Link>
+            {(() => {
+              const { getStorePath } = require("@/lib/url-utils");
+              return <Link href={getStorePath(vendor.store_slug)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Store
+              </Link>
+            })()}
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold text-balance">Review Your Request</h1>
           <p className="text-sm md:text-base text-muted-foreground text-pretty">

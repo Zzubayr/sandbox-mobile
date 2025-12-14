@@ -8,6 +8,7 @@ export interface Vendor {
   email?: string;
   store_name: string;
   store_slug: string;
+  tagline?: string;
   description?: string;
   logo_url?: string;
   banner_url?: string;
@@ -60,6 +61,7 @@ const VendorSchema = new Schema<Vendor>({
   email: { type: String, index: true },
   store_name: { type: String, required: true, trim: true },
   store_slug: { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
+  tagline: { type: String, maxLength: 60 },
   description: { type: String },
   logo_url: { type: String },
   banner_url: { type: String },

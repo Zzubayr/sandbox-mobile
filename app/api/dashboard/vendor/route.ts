@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       logo,
       banner,
       store_slug,
+      tagline,
       location,
       address,
       placeId,
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     if (!store_name || !theme_color) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
-    if (business_type && !['products','services'].includes(business_type)) {
+    if (business_type && !['products', 'services'].includes(business_type)) {
       return NextResponse.json({ error: "Invalid business type" }, { status: 400 });
     }
 
@@ -155,6 +156,7 @@ export async function POST(request: NextRequest) {
       email: (user as any).email || undefined,
       store_name,
       store_slug: uniqueSlug,
+      tagline: tagline || undefined,
       business_type: business_type || 'products',
       description: description || undefined,
       whatsapp_number: whatsapp_number || undefined,
@@ -224,6 +226,7 @@ export async function PATCH(request: NextRequest) {
       "logo",
       "banner",
       "store_slug",
+      "tagline",
       "facebook",
       "instagram",
       "twitter",
@@ -250,7 +253,7 @@ export async function PATCH(request: NextRequest) {
       const sub = normArr(body.business_subcategories ?? body.subcategories)
       if (sub && sub.length) update.business_subcategories = sub; else if (Array.isArray(body.business_subcategories) || Array.isArray(body.subcategories)) update.business_subcategories = undefined
     }
-    if ('business_type' in update && !['products','services'].includes(update.business_type)) {
+    if ('business_type' in update && !['products', 'services'].includes(update.business_type)) {
       delete update.business_type;
     }
     // Location fields
@@ -322,11 +325,11 @@ export async function PATCH(request: NextRequest) {
     await Vendor.updateOne({ user_id: user.id }, mongoUpdate);
     const updated = await Vendor.findOne({ user_id: user.id }).lean();
     if (!updated) return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
-    
+
     if ('services_gallery' in update) {
       console.log('Gallery saved to DB (length):', Array.isArray((updated as any).services_gallery) ? (updated as any).services_gallery.length : 'undefined');
     }
-    
+
     return NextResponse.json({ vendor: shapeId(updated) });
   } catch (err: any) {
     if (err && typeof err.message === 'string' && err.message.toLowerCase().includes('unauthorized')) {

@@ -15,7 +15,8 @@ export default async function DashboardIndex() {
     const vendor = await Vendor.findOne({ user_id: user.id }).lean();
     if (!vendor) redirect("/onboarding");
 
-    const storePath = `/store/${vendor.store_slug}`;
+    const { getAbsoluteStoreUrl } = require("@/lib/url-utils");
+    const storePath = getAbsoluteStoreUrl(vendor.store_slug);
     const isService = (vendor as any).business_type === 'services';
 
     if (isService) {
